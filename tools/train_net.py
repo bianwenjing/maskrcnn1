@@ -175,6 +175,7 @@ def main():
 
     output_dir = cfg.OUTPUT_DIR
     #output_dir = '/home/wenjing/result'
+    print(output_dir)
     if output_dir:
         mkdir(output_dir)
 
