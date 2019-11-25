@@ -1,0 +1,21 @@
+{
+  "1": "wall",
+  "2": "chair",
+  "3": "floor",
+  "4": "table",
+  "5": "door",
+  "7": "cabinet",
+  "8": "shelf",
+  "9": "desk",
+  "11": "bed",
+  "17": "toilet",
+  "21": "curtain",
+  "27": "refrigerator",
+  "1313": "sofa",
+  "14": "sink",
+  "55": "shower curtain",
+  "16": "window",
+  "15": "picture",
+  "18": "bookshelf",
+  "35": "counter"
+}
