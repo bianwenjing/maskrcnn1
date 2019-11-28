@@ -68,8 +68,8 @@ def build_roi_heads(cfg, in_channels):
         roi_heads.append(("mask", build_roi_mask_head(cfg, in_channels)))
     if cfg.MODEL.KEYPOINT_ON:
         roi_heads.append(("keypoint", build_roi_keypoint_head(cfg, in_channels)))
-    # if cfg.MODEL.DEPTH_ON:
-    #     roi_heads.append(("depth", build_roi_depth_head(cfg, in_channels)))
+    if cfg.MODEL.DEPTH_ON:
+        roi_heads.append(("depth", build_roi_depth_head(cfg, in_channels)))
 
     # combine individual heads in a single module
     if roi_heads:

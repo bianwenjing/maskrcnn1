@@ -12,7 +12,7 @@ from maskrcnn_benchmark.utils.env import setup_environment  # noqa F401 isort:sk
 import argparse
 import os
 
-import torch
+import torchF
 from maskrcnn_benchmark.config import cfg
 from maskrcnn_benchmark.data import make_data_loader
 from maskrcnn_benchmark.solver import make_lr_scheduler

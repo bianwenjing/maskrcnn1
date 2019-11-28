@@ -72,7 +72,7 @@ class Checkpointer(object):
 
     def has_checkpoint(self):
         save_file = os.path.join(self.save_dir, "last_checkpoint")
-        print("~~~~~~~~~~~~", save_file)
+        # print("~~~~~~~~~~~~", save_file)
         return os.path.exists(save_file)
 
     def get_checkpoint_file(self):
