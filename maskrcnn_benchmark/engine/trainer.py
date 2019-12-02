@@ -91,11 +91,12 @@ def do_train(
 
         losses = sum(loss for loss in loss_dict.values())
 
-        print('%%%%%%%%%%%%%%', iteration, loss_dict['loss_classifier'])
+        print('%%%%%%%%%%%%%%', iteration, loss_dict)
 
         writer.add_scalar('classifier loss',loss_dict['loss_classifier'], iteration)
         writer.add_scalar('box reg loss', loss_dict['loss_box_reg'], iteration)
-        writer.add_scalar('mask loss', loss_dict['loss_mask'], iteration)
+        # writer.add_scalar('mask loss', loss_dict['loss_mask'], iteration)
+        writer.add_scalar('depth loss', loss_dict['loss_depth'], iteration)
         writer.add_scalar('objectness loss', loss_dict['loss_objectness'], iteration)
         writer.add_scalar('rpn box reg loss', loss_dict['loss_rpn_box_reg'], iteration)
 

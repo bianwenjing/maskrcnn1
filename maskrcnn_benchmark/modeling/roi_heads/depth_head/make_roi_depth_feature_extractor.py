@@ -7,13 +7,13 @@ from maskrcnn_benchmark.modeling import registry
 from maskrcnn_benchmark.modeling.poolers import Pooler
 from maskrcnn_benchmark.modeling.make_layers import make_conv3x3
 
-registry.ROI_MASK_FEATURE_EXTRACTORS.register(
+registry.ROI_DEPTH_FEATURE_EXTRACTORS.register(
     "ResNet50Conv5ROIFeatureExtractor", ResNet50Conv5ROIFeatureExtractor
 )
 
 
 
-@registry.ROI_MASK_FEATURE_EXTRACTORS.register("MaskRCNNFPNFeatureExtractor")
+@registry.ROI_DEPTH_FEATURE_EXTRACTORS.register("MaskRCNNFPNFeatureExtractor")
 class MaskRCNNFPNFeatureExtractor(nn.Module):
     """
     Heads for FPN for classification
@@ -65,7 +65,7 @@ class MaskRCNNFPNFeatureExtractor(nn.Module):
         return x
 
 def make_roi_depth_feature_extractor(cfg, in_channels):
-    func = registry.ROI_MASK_FEATURE_EXTRACTORS[
+    func = registry.ROI_DEPTH_FEATURE_EXTRACTORS[
         cfg.MODEL.ROI_DEPTH_HEAD.FEATURE_EXTRACTOR
     ]
     return func(cfg, in_channels)

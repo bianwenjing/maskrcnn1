@@ -71,9 +71,9 @@ class ROIDepthHead(nn.Module):
             result = self.post_processor(mask_logits, proposals)
             return x, result, {}
 
-        loss_mask = self.loss_evaluator(proposals, mask_logits, targets)
+        loss_depth = self.loss_evaluator(proposals, mask_logits, targets)
 
-        return x, all_proposals, dict(loss_mask=loss_mask)
+        return x, all_proposals, dict(loss_depth=loss_depth)
 
 
 def build_roi_depth_head(cfg, in_channels):

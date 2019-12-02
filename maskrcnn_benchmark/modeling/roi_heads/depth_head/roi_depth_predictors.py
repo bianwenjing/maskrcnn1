@@ -6,7 +6,7 @@ from maskrcnn_benchmark.layers import ConvTranspose2d
 from maskrcnn_benchmark.modeling import registry
 
 
-@registry.ROI_MASK_PREDICTOR.register("MaskRCNNC4Predictor")
+@registry.ROI_DEPTH_PREDICTOR.register("MaskRCNNC4Predictor")
 class MaskRCNNC4Predictor(nn.Module):
     def __init__(self, cfg, in_channels):
         super(MaskRCNNC4Predictor, self).__init__()

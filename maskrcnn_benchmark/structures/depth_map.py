@@ -488,7 +488,7 @@ class PolygonList(object):
         return s
 
 
-class SegmentationMask(object):
+class DepthMap(object):
 
     """
     This class stores the segmentations for all objects in the image.
@@ -526,17 +526,17 @@ class SegmentationMask(object):
 
     def transpose(self, method):
         flipped_instances = self.instances.transpose(method)
-        return SegmentationMask(flipped_instances, self.size, self.mode)
+        return DepthMap(flipped_instances, self.size, self.mode)
 
     def crop(self, box):
         cropped_instances = self.instances.crop(box)
         cropped_size = cropped_instances.size
-        return SegmentationMask(cropped_instances, cropped_size, self.mode)
+        return DepthMap(cropped_instances, cropped_size, self.mode)
 
     def resize(self, size, *args, **kwargs):
         resized_instances = self.instances.resize(size)
         resized_size = size
-        return SegmentationMask(resized_instances, resized_size, self.mode)
+        return DepthMap(resized_instances, resized_size, self.mode)
 
     def to(self, *args, **kwargs):
         return self
@@ -552,7 +552,7 @@ class SegmentationMask(object):
         else:
             raise NotImplementedError("Unknown mode: %s" % str(mode))
 
-        return SegmentationMask(converted_instances, self.size, mode)
+        return DepthMap(converted_instances, self.size, mode)
 
     def get_mask_tensor(self):
         instances = self.instances
@@ -566,7 +566,7 @@ class SegmentationMask(object):
 
     def __getitem__(self, item):
         selected_instances = self.instances.__getitem__(item)
-        return SegmentationMask(selected_instances, self.size, self.mode)
+        return DepthMap(selected_instances, self.size, self.mode)
 
     def __iter__(self):
         self.iter_idx = 0
