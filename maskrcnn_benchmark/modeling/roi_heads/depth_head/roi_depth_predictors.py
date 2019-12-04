@@ -14,8 +14,8 @@ class MaskRCNNC4Predictor(nn.Module):
         dim_reduced = cfg.MODEL.ROI_DEPTH_HEAD.CONV_LAYERS[-1]
         num_inputs = in_channels
 
-        self.conv5_mask = ConvTranspose2d(num_inputs, dim_reduced, 2, 2, 0)
-        self.mask_fcn_logits = Conv2d(dim_reduced, num_classes, 1, 1, 0)
+        self.conv5_depth = ConvTranspose2d(num_inputs, dim_reduced, 2, 2, 0)
+        self.depth_fcn_logits = Conv2d(dim_reduced, num_classes, 1, 1, 0)
 
         for name, param in self.named_parameters():
             if "bias" in name:
@@ -26,8 +26,8 @@ class MaskRCNNC4Predictor(nn.Module):
                 nn.init.kaiming_normal_(param, mode="fan_out", nonlinearity="relu")
 
     def forward(self, x):
-        x = F.relu(self.conv5_mask(x))
-        return self.mask_fcn_logits(x)
+        x = F.relu(self.conv5_depth(x))
+        return self.depth_fcn_logits(x)
 
 def make_roi_depth_predictor(cfg, in_channels):
     func = registry.ROI_DEPTH_PREDICTOR[cfg.MODEL.ROI_DEPTH_HEAD.PREDICTOR]

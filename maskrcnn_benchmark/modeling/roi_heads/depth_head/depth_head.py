@@ -65,13 +65,13 @@ class ROIDepthHead(nn.Module):
             x = x[torch.cat(positive_inds, dim=0)]
         else:
             x = self.feature_extractor(features, proposals)
-        mask_logits = self.predictor(x)
+        depth_logits = self.predictor(x)
 
         if not self.training:
-            result = self.post_processor(mask_logits, proposals)
+            result = self.post_processor(depth_logits, proposals)
             return x, result, {}
 
-        loss_depth = self.loss_evaluator(proposals, mask_logits, targets)
+        loss_depth = self.loss_evaluator(proposals, depth_logits, targets)
 
         return x, all_proposals, dict(loss_depth=loss_depth)
 

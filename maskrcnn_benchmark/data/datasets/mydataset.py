@@ -5,6 +5,9 @@ from maskrcnn_benchmark.structures.bounding_box import BoxList
 from maskrcnn_benchmark.structures.segmentation_mask import SegmentationMask
 from maskrcnn_benchmark.structures.keypoint import PersonKeypoints
 from maskrcnn_benchmark.structures.depth_map import DepthMap
+from PIL import Image
+import os
+import numpy as np
 
 min_keypoints_per_image = 10
 
@@ -64,6 +67,8 @@ class ScanNetDataset(torchvision.datasets.coco.CocoDetection):
         self.id_to_img_map = {k: v for k, v in enumerate(self.ids)}
         self._transforms = transforms
 
+        self.PATH_DIR = '/home/wenjing/storage/ScanNetv2/'
+
     def __getitem__(self, idx):
         img, anno = super(ScanNetDataset, self).__getitem__(idx)
         # filter crowd annotations
@@ -88,12 +93,26 @@ class ScanNetDataset(torchvision.datasets.coco.CocoDetection):
             keypoints = [obj["keypoints"] for obj in anno]
             keypoints = PersonKeypoints(keypoints, img.size)
             target.add_field("keypoints", keypoints)
+##############################################################################
+        # if anno and "depth" in anno[0]:
+        #     depth_dir = [obj["depth"] for obj in anno]
+        #     num_obj = len(depth_dir)
+        #     depth_dir = depth_dir[0]
+        #     depth_dir = os.path.join(self.PATH_DIR, depth_dir)
+        #     depth_i = Image.open(depth_dir).resize(img.size)
+        #     depth_i = torch.from_numpy(np.array(depth_i))
+        #     depth = []
+        #     for i in range(num_obj):
+        #         depth.append(depth_i)
+        #     depth = DepthMap(depth, img.size, mode='mask')
+        #     target.add_field("depth", depth)
 
         if anno and "depth" in anno[0]:
             depth = [obj["depth"] for obj in anno]
-            depth = DepthMap(depth, img.size, mode = 'poly')
+            depth = SegmentationMask(depth, img.size, mode='poly')
             target.add_field("depth", depth)
 
+###################################################################################
         target = target.clip_to_image(remove_empty=True)
 
         if self._transforms is not None:

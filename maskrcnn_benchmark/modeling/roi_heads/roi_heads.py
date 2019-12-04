@@ -52,7 +52,6 @@ class CombinedROIHeads(torch.nn.ModuleDict):
             # During training, self.box() will return the unaltered proposals as "detections"
             # this makes the API consistent during training and testing
             x, detections, loss_depth = self.depth(depth_features, detections, targets)
-            print('*************',loss_depth)
             losses.update(loss_depth)
 
         if self.cfg.MODEL.KEYPOINT_ON:

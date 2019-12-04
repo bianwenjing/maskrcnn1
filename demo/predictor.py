@@ -158,6 +158,7 @@ class COCODemo(object):
         confidence_threshold=0.7,
         show_mask_heatmaps=False,
         masks_per_dim=2,
+        depths_per_dim=2,
         min_image_size=224,
         weight_loading = None
     ):
@@ -188,7 +189,7 @@ class COCODemo(object):
         self.confidence_threshold = confidence_threshold
         self.show_mask_heatmaps = show_mask_heatmaps
         self.masks_per_dim = masks_per_dim
-
+        self.depths_per_dim = depths_per_dim
     def build_transform(self):
         """
         Creates a basic transformation that was used to train the models
@@ -261,7 +262,6 @@ class COCODemo(object):
         # cfg.DATALOADER.SIZE_DIVISIBILITY
         image_list = to_image_list(image, self.cfg.DATALOADER.SIZE_DIVISIBILITY)
         image_list = image_list.to(self.device)
-        print(list(image_list.image_sizes))
         # compute predictions
         with torch.no_grad():
             predictions = self.model(image_list)
@@ -281,6 +281,10 @@ class COCODemo(object):
             # always single image is passed at a time
             masks = self.masker([masks], [prediction])[0]
             prediction.add_field("mask", masks)
+        if prediction.has_field("depth"):
+            depths = prediction.get_field("depth")
+            depths = self.masker([depths], [prediction])[0]
+            prediction.add_field("depth", depths)
         return prediction
 
     def select_top_predictions(self, predictions):
@@ -361,6 +365,32 @@ class COCODemo(object):
 
         return composite
 
+    def overlay_depth(self, image, predictions):
+        """
+        Adds the instances contours for each predicted object.
+        Each label has a different color.
+
+        Arguments:
+            image (np.ndarray): an image as returned by OpenCV
+            predictions (BoxList): the result of the computation by the model.
+                It should contain the field `mask` and `labels`.
+        """
+        depths = predictions.get_field("depth").numpy()
+        labels = predictions.get_field("labels")
+
+        colors = self.compute_colors_for_labels(labels).tolist()
+
+        for depth, color in zip(depths, colors):
+            thresh = depth[0, :, :, None].astype(np.uint8)
+            contours, hierarchy = cv2_util.findContours(
+                thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE
+            )
+            image = cv2.drawContours(image, contours, -1, color, 3)
+
+        composite = image
+
+        return composite
+
     def overlay_keypoints(self, image, predictions):
         keypoints = predictions.get_field("keypoints")
         kps = keypoints.keypoints
@@ -404,6 +434,42 @@ class COCODemo(object):
                 start_x = x * width
                 end_x = (x + 1) * width
                 result[start_y:end_y, start_x:end_x] = masks[y, x]
+        return cv2.applyColorMap(result.numpy(), cv2.COLORMAP_JET)
+
+    def create_depth_montage(self, image, predictions):
+        """
+        Create a montage showing the probability heatmaps for each one one of the
+        detected objects
+
+        Arguments:
+            image (np.ndarray): an image as returned by OpenCV
+            predictions (BoxList): the result of the computation by the model.
+                It should contain the field `mask`.
+        """
+        depths = predictions.get_field("depth")
+        depths_per_dim = self.depths_per_dim
+        depths = L.interpolate(
+            depths.float(), scale_factor=1 / depths_per_dim
+        ).byte()
+        height, width = depths.shape[-2:]
+        max_depths = depths_per_dim ** 2
+        depths = depths[:max_depths]
+        # handle case where we have less detections than max_masks
+        if len(depths) < max_depths:
+            depths_padded = torch.zeros(max_depths, 1, height, width, dtype=torch.uint8)
+            depths_padded[: len(depths)] = depths
+            depths = depths_padded
+        masks = depths.reshape(depths_per_dim, depths_per_dim, height, width)
+        result = torch.zeros(
+            (depths_per_dim * height, depths_per_dim * width), dtype=torch.uint8
+        )
+        for y in range(depths_per_dim):
+            start_y = y * height
+            end_y = (y + 1) * height
+            for x in range(depths_per_dim):
+                start_x = x * width
+                end_x = (x + 1) * width
+                result[start_y:end_y, start_x:end_x] = depths[y, x]
         return cv2.applyColorMap(result.numpy(), cv2.COLORMAP_JET)
 
     def overlay_class_names(self, image, predictions):

@@ -86,6 +86,8 @@ def main():
     iou_types = ("bbox",)
     if cfg.MODEL.MASK_ON:
         iou_types = iou_types + ("segm",)
+    if cfg.MODEL.DEPTH_ON:
+        iou_types = iou_types + ("depth",)
     if cfg.MODEL.KEYPOINT_ON:
         iou_types = iou_types + ("keypoints",)
     output_folders = [None] * len(cfg.DATASETS.TEST)

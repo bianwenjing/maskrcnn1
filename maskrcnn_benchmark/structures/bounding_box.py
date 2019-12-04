@@ -206,6 +206,7 @@ class BoxList(object):
         # print('££££££££££££££££££',self.bbox[item].shape)
         bbox = BoxList(self.bbox[item], self.size, self.mode)
         for k, v in self.extra_fields.items():
+            # print('################', k,'oooo', v, '0000', item)
             bbox.add_field(k, v[item])
         return bbox
 

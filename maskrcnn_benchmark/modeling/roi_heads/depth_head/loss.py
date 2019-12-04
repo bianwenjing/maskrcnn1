@@ -99,7 +99,7 @@ class MaskRCNNLossComputation(object):
 
         return labels, masks
 
-    def __call__(self, proposals, mask_logits, targets):
+    def __call__(self, proposals, depth_logits, targets):
         """
         Arguments:
             proposals (list[BoxList])
@@ -109,26 +109,28 @@ class MaskRCNNLossComputation(object):
         Return:
             mask_loss (Tensor): scalar tensor containing the loss
         """
-        labels, mask_targets = self.prepare_targets(proposals, targets)
+
+        labels, depth_targets = self.prepare_targets(proposals, targets)
+        # print('++++++++++',depth_logits, '££££££', labels)
+
 
         labels = cat(labels, dim=0)
-        mask_targets = cat(mask_targets, dim=0)
+        depth_targets = cat(depth_targets, dim=0)
 
         positive_inds = torch.nonzero(labels > 0).squeeze(1)
         labels_pos = labels[positive_inds]
 
         # torch.mean (in binary_cross_entropy_with_logits) doesn't
         # accept empty tensors, so handle it separately
-        if mask_targets.numel() == 0:
-            return mask_logits.sum() * 0
+        if depth_targets.numel() == 0:
+            return depth_logits.sum() * 0
 
-        mask_loss = F.binary_cross_entropy_with_logits(
-            mask_logits[positive_inds, labels_pos], mask_targets
+        depth_loss = F.binary_cross_entropy_with_logits(
+            depth_logits[positive_inds, labels_pos], depth_targets
         )
-        # depth_loss = F.mse_loss(
-        #
+        # depth_loss = F.mse_loss(depth_logits[positive_inds, labels_pos], depth_targets
         # )
-        return mask_loss
+        return depth_loss
 
 
 def make_roi_depth_loss_evaluator(cfg):

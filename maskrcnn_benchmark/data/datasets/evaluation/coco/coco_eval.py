@@ -8,7 +8,8 @@ from tqdm import tqdm
 from maskrcnn_benchmark.modeling.roi_heads.mask_head.inference import Masker
 from maskrcnn_benchmark.structures.bounding_box import BoxList
 from maskrcnn_benchmark.structures.boxlist_ops import boxlist_iou
-
+import pycocotools.mask as mask_util
+import numpy as np
 
 def do_coco_evaluation(
     dataset,
@@ -37,7 +38,7 @@ def do_coco_evaluation(
         if output_folder:
             torch.save(res, os.path.join(output_folder, "box_proposals.pth"))
         return
-    logger.info("Preparing results for COCO format")
+    logger.info("Preparing results for COCO format*****")
     coco_results = {}
     if "bbox" in iou_types:
         logger.info("Preparing bbox results")
@@ -48,10 +49,14 @@ def do_coco_evaluation(
     if 'keypoints' in iou_types:
         logger.info('Preparing keypoints results')
         coco_results['keypoints'] = prepare_for_coco_keypoint(predictions, dataset)
+    if "depth" in iou_types:
+        logger.info('Preparing depth results')
+        coco_results["depth"] = prepare_for_depth(predictions, dataset)
 
     results = COCOResults(*iou_types)
     logger.info("Evaluating predictions")
     for iou_type in iou_types:
+        # print('££££££££££', iou_type)
         with tempfile.NamedTemporaryFile() as f:
             file_path = f.name
             if output_folder:
@@ -102,8 +107,6 @@ def prepare_for_coco_detection(predictions, dataset):
 
 
 def prepare_for_coco_segmentation(predictions, dataset):
-    import pycocotools.mask as mask_util
-    import numpy as np
 
     masker = Masker(threshold=0.5, padding=1)
     # assert isinstance(dataset, COCODataset)
@@ -147,6 +150,56 @@ def prepare_for_coco_segmentation(predictions, dataset):
                     "image_id": original_id,
                     "category_id": mapped_labels[k],
                     "segmentation": rle,
+                    "score": scores[k],
+                }
+                for k, rle in enumerate(rles)
+            ]
+        )
+    return coco_results
+
+def prepare_for_depth(predictions, dataset):
+    masker = Masker(threshold=0.5, padding=1)
+    # assert isinstance(dataset, COCODataset)
+    coco_results = []
+    for image_id, prediction in tqdm(enumerate(predictions)):
+        original_id = dataset.id_to_img_map[image_id]
+        if len(prediction) == 0:
+            continue
+
+        img_info = dataset.get_img_info(image_id)
+        image_width = img_info["width"]
+        image_height = img_info["height"]
+        prediction = prediction.resize((image_width, image_height))
+        depths = prediction.get_field("mask")
+        # t = time.time()
+        # Masker is necessary only if masks haven't been already resized.
+        if list(depths.shape[-2:]) != [image_height, image_width]:
+            depths = masker(depths.expand(1, -1, -1, -1, -1), prediction)
+            depths = depths[0]
+        # logger.info('Time mask: {}'.format(time.time() - t))
+        # prediction = prediction.convert('xywh')
+
+        # boxes = prediction.bbox.tolist()
+        scores = prediction.get_field("scores").tolist()
+        labels = prediction.get_field("labels").tolist()
+
+        # rles = prediction.get_field('mask')
+
+        rles = [
+            mask_util.encode(np.array(depth[0, :, :, np.newaxis],  dtype=np.uint8, order="F"))[0]
+            for depth in depths
+        ]
+        for rle in rles:
+            rle["counts"] = rle["counts"].decode("utf-8")
+
+        mapped_labels = [dataset.contiguous_category_id_to_json_id[i] for i in labels]
+
+        coco_results.extend(
+            [
+                {
+                    "image_id": original_id,
+                    "category_id": mapped_labels[k],
+                    "depth": rle,
                     "score": scores[k],
                 }
                 for k, rle in enumerate(rles)
@@ -338,10 +391,11 @@ class COCOResults(object):
             "ARl@1000",
         ],
         "keypoints": ["AP", "AP50", "AP75", "APm", "APl"],
+        "depth": ["AP", "AP50", "AP75", "APm", "APl"],
     }
 
     def __init__(self, *iou_types):
-        allowed_types = ("box_proposal", "bbox", "segm", "keypoints")
+        allowed_types = ("box_proposal", "bbox", "segm", "keypoints", "depth")
         assert all(iou_type in allowed_types for iou_type in iou_types)
         results = OrderedDict()
         for iou_type in iou_types:

@@ -60,7 +60,7 @@ def train(cfg, local_rank, distributed):
     arguments["iteration"] = 0
 
     output_dir = cfg.OUTPUT_DIR
-    # output_dir = "/home/wenjing/result"
+
 
     save_to_disk = get_rank() == 0
     checkpointer = DetectronCheckpointer(
@@ -110,6 +110,8 @@ def run_test(cfg, model, distributed):
         iou_types = iou_types + ("segm",)
     if cfg.MODEL.KEYPOINT_ON:
         iou_types = iou_types + ("keypoints",)
+    if cfg.MODEL.DEPTH_ON:
+        iou_types = iou_types + ("depth",)
     output_folders = [None] * len(cfg.DATASETS.TEST)
     dataset_names = cfg.DATASETS.TEST
     if cfg.OUTPUT_DIR:

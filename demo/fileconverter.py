@@ -84,9 +84,9 @@ def convert(img_path, json_file, mode, aa, bb):
 
                         # Js['annotations'].append(
                         #     {'segmentation': segment[cl], 'area': area, 'iscrowd': 0, 'image_id': img_id,
-                        #      'bbox': bbox[cl], 'category_id': cl.item(), 'id': anno_id, 'depth': segment[cl]})
+                        #      'bbox': bbox[cl], 'category_id': cl.item(), 'id': anno_id, 'depth': mode + '_depth/' + aline[:12]+ '/depth/' + str(jj) + '.png'})
                         Js['annotations'].append(
-                            {'area': area, 'iscrowd': 0, 'image_id': img_id,
+                            {'segmentation': segment[cl], 'area': area, 'iscrowd': 0, 'image_id': img_id,
                              'bbox': bbox[cl], 'category_id': cl.item(), 'id': anno_id, 'depth': segment[cl]})
                         anno_id += 1
             img_id += 1
@@ -99,7 +99,7 @@ def convert(img_path, json_file, mode, aa, bb):
 if __name__ == '__main__':
     img_path = '/home/wenjing/storage/ScanNetv2/train.txt'
     json_file = '/home/wenjing/anno/train_depth.txt'
-    convert(img_path, json_file, mode = 'train', aa = 10, bb = 100)
+    convert(img_path, json_file, mode = 'train', aa = 50, bb = 100)
     # a in range 1,119
     img_path = '/home/wenjing/storage/ScanNetv2/val.txt'
     json_file = '/home/wenjing/anno/val_depth.txt'

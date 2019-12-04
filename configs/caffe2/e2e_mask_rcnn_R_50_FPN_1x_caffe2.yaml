@@ -1,6 +1,6 @@
 MODEL:
   META_ARCHITECTURE: "GeneralizedRCNN"
-  WEIGHT: "/home/wenjing/result/model_final.pth"
+  WEIGHT: "/home/wenjing/result3/model_final.pth"
   BACKBONE:
     CONV_BODY: "R-50-FPN"
   RESNETS:
@@ -36,7 +36,7 @@ MODEL:
     POOLER_SAMPLING_RATIO: 2
     RESOLUTION: 28
     SHARE_BOX_FEATURE_EXTRACTOR: False
-  # MASK_ON: True
+  MASK_ON: False
   DEPTH_ON: True
 DATASETS:
   # TEST: ("coco_2014_minival",)
