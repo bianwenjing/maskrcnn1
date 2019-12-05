@@ -94,23 +94,23 @@ class ScanNetDataset(torchvision.datasets.coco.CocoDetection):
             keypoints = PersonKeypoints(keypoints, img.size)
             target.add_field("keypoints", keypoints)
 ##############################################################################
-        # if anno and "depth" in anno[0]:
-        #     depth_dir = [obj["depth"] for obj in anno]
-        #     num_obj = len(depth_dir)
-        #     depth_dir = depth_dir[0]
-        #     depth_dir = os.path.join(self.PATH_DIR, depth_dir)
-        #     depth_i = Image.open(depth_dir).resize(img.size)
-        #     depth_i = torch.from_numpy(np.array(depth_i))
-        #     depth = []
-        #     for i in range(num_obj):
-        #         depth.append(depth_i)
-        #     depth = DepthMap(depth, img.size, mode='mask')
-        #     target.add_field("depth", depth)
-
         if anno and "depth" in anno[0]:
-            depth = [obj["depth"] for obj in anno]
-            depth = SegmentationMask(depth, img.size, mode='poly')
+            depth_dir = [obj["depth"] for obj in anno]
+            num_obj = len(depth_dir)
+            depth_dir = depth_dir[0]
+            depth_dir = os.path.join(self.PATH_DIR, depth_dir)
+            depth_i = Image.open(depth_dir).resize(img.size)
+            depth_i = torch.from_numpy(np.array(depth_i))
+            depth = []
+            for i in range(num_obj):
+                depth.append(depth_i)
+            depth = DepthMap(depth, img.size, mode='mask')
             target.add_field("depth", depth)
+
+        # if anno and "depth" in anno[0]:
+        #     depth = [obj["depth"] for obj in anno]
+        #     depth = SegmentationMask(depth, img.size, mode='poly')
+        #     target.add_field("depth", depth)
 
 ###################################################################################
         target = target.clip_to_image(remove_empty=True)

@@ -66,6 +66,7 @@ class ROIDepthHead(nn.Module):
         else:
             x = self.feature_extractor(features, proposals)
         depth_logits = self.predictor(x)
+        # depth_logits shape (# of proposals, 20 classes, 28, 28)
 
         if not self.training:
             result = self.post_processor(depth_logits, proposals)

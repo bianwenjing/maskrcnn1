@@ -170,7 +170,7 @@ def prepare_for_depth(predictions, dataset):
         image_width = img_info["width"]
         image_height = img_info["height"]
         prediction = prediction.resize((image_width, image_height))
-        depths = prediction.get_field("mask")
+        depths = prediction.get_field("depth")
         # t = time.time()
         # Masker is necessary only if masks haven't been already resized.
         if list(depths.shape[-2:]) != [image_height, image_width]:

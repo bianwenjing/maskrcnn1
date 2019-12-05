@@ -56,7 +56,7 @@ class MaskRCNNLossComputation(object):
         match_quality_matrix = boxlist_iou(target, proposal)
         matched_idxs = self.proposal_matcher(match_quality_matrix)
         # Mask RCNN needs "labels" and "masks "fields for creating the targets
-        target = target.copy_with_fields(["labels", "masks"])
+        target = target.copy_with_fields(["labels", "depth"])
         # get the targets corresponding GT for each proposal
         # NB: need to clamp the indices because we can have a single
         # GT in the image, and matched_idxs can be -2, which goes
@@ -67,7 +67,7 @@ class MaskRCNNLossComputation(object):
 
     def prepare_targets(self, proposals, targets):
         labels = []
-        masks = []
+        maps = []
         for proposals_per_image, targets_per_image in zip(proposals, targets):
             matched_targets = self.match_targets_to_proposals(
                 proposals_per_image, targets_per_image
@@ -85,19 +85,19 @@ class MaskRCNNLossComputation(object):
             # mask scores are only computed on positive samples
             positive_inds = torch.nonzero(labels_per_image > 0).squeeze(1)
 
-            segmentation_masks = matched_targets.get_field("masks")
-            segmentation_masks = segmentation_masks[positive_inds]
+            depth_maps = matched_targets.get_field("depth")
+            depth_maps = depth_maps[positive_inds]
 
             positive_proposals = proposals_per_image[positive_inds]
 
-            masks_per_image = project_masks_on_boxes(
-                segmentation_masks, positive_proposals, self.discretization_size
+            maps_per_image = project_masks_on_boxes(
+                depth_maps, positive_proposals, self.discretization_size
             )
 
             labels.append(labels_per_image)
-            masks.append(masks_per_image)
+            maps.append(maps_per_image)
 
-        return labels, masks
+        return labels, maps
 
     def __call__(self, proposals, depth_logits, targets):
         """
@@ -119,17 +119,15 @@ class MaskRCNNLossComputation(object):
 
         positive_inds = torch.nonzero(labels > 0).squeeze(1)
         labels_pos = labels[positive_inds]
-
         # torch.mean (in binary_cross_entropy_with_logits) doesn't
         # accept empty tensors, so handle it separately
         if depth_targets.numel() == 0:
             return depth_logits.sum() * 0
 
-        depth_loss = F.binary_cross_entropy_with_logits(
-            depth_logits[positive_inds, labels_pos], depth_targets
-        )
-        # depth_loss = F.mse_loss(depth_logits[positive_inds, labels_pos], depth_targets
+        # depth_loss = F.binary_cross_entropy_with_logits(
+        #     depth_logits[positive_inds, labels_pos], depth_targets
         # )
+        depth_loss = F.mse_loss(depth_logits[positive_inds, labels_pos], depth_targets)
         return depth_loss
 
 

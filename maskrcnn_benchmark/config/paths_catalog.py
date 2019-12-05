@@ -149,12 +149,12 @@ class DatasetCatalog(object):
         },
         "ScanNet_train":{
             "img_dir": "/home/wenjing/storage/ScanNetv2/train_full",
-            "ann_dir": "/home/wenjing/anno/train.txt",
+            "ann_dir": "/home/wenjing/anno/train_depth_real.txt",
 
         },
         "ScanNet_val": {
             "img_dir": "/home/wenjing/storage/ScanNetv2/val",
-            "ann_dir": "/home/wenjing/anno/val_depth.txt"
+            "ann_dir": "/home/wenjing/anno/val_depth_real.txt"
 
         },
         "ScanNet_test":{

@@ -108,7 +108,7 @@ class BinaryMaskList(object):
         assert masks.shape[2] == size[0], "%s != %s" % (masks.shape[2], size[0])
 
         self.masks = masks
-        print(masks.shape,'£££££££££££££££££££££££')
+        # print(masks.shape,'£££££££££££££££££££££££')
         self.size = tuple(size)
 
     def transpose(self, method):

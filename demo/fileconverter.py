@@ -82,12 +82,12 @@ def convert(img_path, json_file, mode, aa, bb):
                         d = d.tolist()
                         segment[cl] = d
 
-                        # Js['annotations'].append(
-                        #     {'segmentation': segment[cl], 'area': area, 'iscrowd': 0, 'image_id': img_id,
-                        #      'bbox': bbox[cl], 'category_id': cl.item(), 'id': anno_id, 'depth': mode + '_depth/' + aline[:12]+ '/depth/' + str(jj) + '.png'})
                         Js['annotations'].append(
                             {'segmentation': segment[cl], 'area': area, 'iscrowd': 0, 'image_id': img_id,
-                             'bbox': bbox[cl], 'category_id': cl.item(), 'id': anno_id, 'depth': segment[cl]})
+                             'bbox': bbox[cl], 'category_id': cl.item(), 'id': anno_id, 'depth': mode + '_depth/' + aline[:12]+ '/depth/' + str(jj) + '.png'})
+                        # Js['annotations'].append(
+                        #     {'segmentation': segment[cl], 'area': area, 'iscrowd': 0, 'image_id': img_id,
+                        #      'bbox': bbox[cl], 'category_id': cl.item(), 'id': anno_id, 'depth': segment[cl]})
                         anno_id += 1
             img_id += 1
     print(mode, "data number :", img_id)
@@ -98,11 +98,11 @@ def convert(img_path, json_file, mode, aa, bb):
 
 if __name__ == '__main__':
     img_path = '/home/wenjing/storage/ScanNetv2/train.txt'
-    json_file = '/home/wenjing/anno/train_depth.txt'
-    convert(img_path, json_file, mode = 'train', aa = 50, bb = 100)
+    json_file = '/home/wenjing/anno/train_depth_real.txt'
+    convert(img_path, json_file, mode = 'train', aa = 100, bb = 100)
     # a in range 1,119
     img_path = '/home/wenjing/storage/ScanNetv2/val.txt'
-    json_file = '/home/wenjing/anno/val_depth.txt'
-    convert(img_path, json_file, mode='val', aa=4, bb= 100)
+    json_file = '/home/wenjing/anno/val_depth_real.txt'
+    convert(img_path, json_file, mode='val', aa=50, bb= 100)
 
     # b in range 1, 45
