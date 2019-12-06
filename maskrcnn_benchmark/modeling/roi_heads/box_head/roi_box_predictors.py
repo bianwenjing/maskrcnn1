@@ -42,10 +42,13 @@ class FPNPredictor(nn.Module):
         num_bbox_reg_classes = 2 if cfg.MODEL.CLS_AGNOSTIC_BBOX_REG else num_classes
         self.bbox_pred = nn.Linear(representation_size, num_bbox_reg_classes * 4)
 
-        nn.init.normal_(self.cls_score.weight, std=0.01)
-        nn.init.normal_(self.bbox_pred.weight, std=0.001)
-        for l in [self.cls_score, self.bbox_pred]:
-            nn.init.constant_(l.bias, 0)
+        for name, param in self.named_parameters():
+            param.requires_grad = False
+
+        # nn.init.normal_(self.cls_score.weight, std=0.01)
+        # nn.init.normal_(self.bbox_pred.weight, std=0.001)
+        # for l in [self.cls_score, self.bbox_pred]:
+        #     nn.init.constant_(l.bias, 0)
 
     def forward(self, x):
         if x.ndimension() == 4:

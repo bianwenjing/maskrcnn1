@@ -42,6 +42,10 @@ def build_resnet_fpn_backbone(cfg):
     )
     model = nn.Sequential(OrderedDict([("body", body), ("fpn", fpn)]))
     model.out_channels = out_channels
+########################################################
+    for params in model.parameters():
+        params.requires_grad = False
+#########################################################
     return model
 
 

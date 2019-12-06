@@ -44,6 +44,7 @@ cfg.merge_from_file(args.cfg)
 _d = load_c2_format(cfg, DETECTRON_PATH)
 newdict = _d
 
+# print(newdict['model'].keys())
 newdict['model'] = removekey(_d['model'],
                              ['cls_score.bias', 'cls_score.weight', 'bbox_pred.bias', 'bbox_pred.weight', 'mask_fcn_logits.bias', 'mask_fcn_logits.weight'])
 torch.save(newdict, args.save_path)

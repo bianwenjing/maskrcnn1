@@ -66,6 +66,7 @@ class FPN2MLPFeatureExtractor(nn.Module):
         input_size = in_channels * resolution ** 2
         representation_size = cfg.MODEL.ROI_BOX_HEAD.MLP_HEAD_DIM
         use_gn = cfg.MODEL.ROI_BOX_HEAD.USE_GN
+
         self.pooler = pooler
         self.fc6 = make_fc(input_size, representation_size, use_gn)
         self.fc7 = make_fc(representation_size, representation_size, use_gn)

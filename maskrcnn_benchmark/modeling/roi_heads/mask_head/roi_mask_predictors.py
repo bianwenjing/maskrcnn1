@@ -19,12 +19,13 @@ class MaskRCNNC4Predictor(nn.Module):
         self.mask_fcn_logits = Conv2d(dim_reduced, num_classes, 1, 1, 0)
 
         for name, param in self.named_parameters():
-            if "bias" in name:
-                nn.init.constant_(param, 0)
-            elif "weight" in name:
-                # Caffe2 implementation uses MSRAFill, which in fact
-                # corresponds to kaiming_normal_ in PyTorch
-                nn.init.kaiming_normal_(param, mode="fan_out", nonlinearity="relu")
+            param.requires_grad = False
+            # if "bias" in name:
+            #     nn.init.constant_(param, 0)
+            # elif "weight" in name:
+            #     # Caffe2 implementation uses MSRAFill, which in fact
+            #     # corresponds to kaiming_normal_ in PyTorch
+            #     nn.init.kaiming_normal_(param, mode="fan_out", nonlinearity="relu")
 
     def forward(self, x):
         x = F.relu(self.conv5_mask(x))
