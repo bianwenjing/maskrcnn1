@@ -136,7 +136,10 @@ class RPNModule(torch.nn.Module):
         self.box_selector_train = box_selector_train
         self.box_selector_test = box_selector_test
         self.loss_evaluator = loss_evaluator
-
+##########################################################
+        for name, param in self.named_parameters():
+            param.requires_grad = False
+##############################################################
     def forward(self, images, features, targets=None):
         """
         Arguments:
