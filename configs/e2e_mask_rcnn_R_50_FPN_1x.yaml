@@ -40,7 +40,7 @@ MODEL:
     SHARE_BOX_FEATURE_EXTRACTOR: False
 
 
-  MASK_ON: False
+  MASK_ON: True
   DEPTH_ON: True
 DATASETS:
 #  TRAIN: ("coco_2014_train", "coco_2014_valminusminival")

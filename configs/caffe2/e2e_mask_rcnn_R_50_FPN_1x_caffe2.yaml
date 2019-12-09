@@ -36,7 +36,7 @@ MODEL:
     POOLER_SAMPLING_RATIO: 2
     RESOLUTION: 28
     SHARE_BOX_FEATURE_EXTRACTOR: False
-  MASK_ON: False
+  MASK_ON: True
   DEPTH_ON: True
 DATASETS:
   # TEST: ("coco_2014_minival",)
