@@ -11,6 +11,11 @@ from maskrcnn_benchmark.structures.boxlist_ops import boxlist_iou
 import pycocotools.mask as mask_util
 import numpy as np
 
+import json
+from pycocotools.cocoeval import COCOeval
+from pycocotools.coco import COCO
+
+
 def do_coco_evaluation(
     dataset,
     predictions,
@@ -61,8 +66,11 @@ def do_coco_evaluation(
             file_path = f.name
             if output_folder:
                 file_path = os.path.join(output_folder, iou_type + ".json")
-            res = evaluate_predictions_on_coco(
-                dataset.coco, coco_results[iou_type], file_path, iou_type
+            if iou_type == 'depth':
+                res = evaluate_depth_predictions(dataset.coco, coco_results[iou_type], file_path, iou_type)
+            else:
+                res = evaluate_predictions_on_coco(
+                    dataset.coco, coco_results[iou_type], file_path, iou_type
             )
             results.update(res)
     logger.info(results)
@@ -358,13 +366,12 @@ def evaluate_box_proposals(
 def evaluate_predictions_on_coco(
     coco_gt, coco_results, json_result_file, iou_type="bbox"
 ):
-    import json
+
 
     with open(json_result_file, "w") as f:
         json.dump(coco_results, f)
 
-    from pycocotools.coco import COCO
-    from pycocotools.cocoeval import COCOeval
+
 
     coco_dt = coco_gt.loadRes(str(json_result_file)) if coco_results else COCO()
 
@@ -374,8 +381,14 @@ def evaluate_predictions_on_coco(
     coco_eval.accumulate()
     coco_eval.summarize()
     return coco_eval
+#####################################################################
+def evaluate_depth_predictions(
+    coco_gt, coco_results, json_result_file, iou_type="bbox"
+):
+    with open(json_result_file, "w") as f:
+        json.dump(coco_results, f)
 
-
+#############################################################################
 class COCOResults(object):
     METRICS = {
         "bbox": ["AP", "AP50", "AP75", "APs", "APm", "APl"],
@@ -391,7 +404,8 @@ class COCOResults(object):
             "ARl@1000",
         ],
         "keypoints": ["AP", "AP50", "AP75", "APm", "APl"],
-        "depth": ["AP", "AP50", "AP75", "APm", "APl"],
+        # "depth": ["AP", "AP50", "AP75", "APm", "APl"],
+        "depth": ["abs_rel", "sq_rel", "rmse_log", "log10_mean", "a1", "a2", "a3"]
     }
 
     def __init__(self, *iou_types):
@@ -407,13 +421,13 @@ class COCOResults(object):
     def update(self, coco_eval):
         if coco_eval is None:
             return
-        from pycocotools.cocoeval import COCOeval
-
-        assert isinstance(coco_eval, COCOeval)
+        assert isinstance(coco_eval, COCOeval) or isinstance(coco_eval, DEPTHeval)
         s = coco_eval.stats
         iou_type = coco_eval.params.iouType
+
         res = self.results[iou_type]
         metrics = COCOResults.METRICS[iou_type]
+
         for idx, metric in enumerate(metrics):
             res[metric] = s[idx]
 
@@ -448,3 +462,9 @@ def check_expected_results(results, expected_results, sigma_tol):
         else:
             msg = "PASS: " + msg
             logger.info(msg)
+
+
+class DEPTHeval:
+    def __init__(self):
+        self.stats = []  # result summarization
+        self.ious = {}  # ious between all gts and dts
