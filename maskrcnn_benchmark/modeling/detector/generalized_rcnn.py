@@ -64,7 +64,7 @@ class GeneralizedRCNN(nn.Module):
             losses.update(proposal_losses)
 
             return losses
- ##############################################################################
+ ###################################
         # if self.training and target_depth is not None:
         #     with torch.no_grad():
         #         images = to_image_list(images)
