@@ -20,6 +20,7 @@ def make_optimizer(cfg, model):
         params += [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
 
     optimizer = torch.optim.SGD(params, lr, momentum=cfg.SOLVER.MOMENTUM)
+    # optimizer = torch.optim.Adam(params, lr, betas=(0.9, 0.999), eps=1e-08, weight_decay=0, amsgrad=False)
     return optimizer
 
 

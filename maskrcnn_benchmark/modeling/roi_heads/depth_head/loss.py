@@ -127,7 +127,8 @@ class MaskRCNNLossComputation(object):
         # depth_loss = F.binary_cross_entropy_with_logits(
         #     depth_logits[positive_inds, labels_pos], depth_targets
         # )
-        depth_loss = F.mse_loss(depth_logits[positive_inds, labels_pos], depth_targets)
+        print('depth000000000000',depth_targets)
+        depth_loss = F.mse_loss(depth_logits[positive_inds, labels_pos], depth_targets)/10000
         return depth_loss
 
 
