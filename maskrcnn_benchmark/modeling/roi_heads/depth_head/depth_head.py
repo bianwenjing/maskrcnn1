@@ -18,7 +18,7 @@ def keep_only_positive_boxes(boxes):
     """
     assert isinstance(boxes, (list, tuple))
     assert isinstance(boxes[0], BoxList)
-    assert boxes[0].has_field("labels")
+    assert boxes[0].has_field("labels") # positive category
     positive_boxes = []
     positive_inds = []
     num_boxes = 0

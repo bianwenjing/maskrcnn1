@@ -15,6 +15,8 @@ import json
 from pycocotools.cocoeval import COCOeval
 from pycocotools.coco import COCO
 
+import time
+from collections import defaultdict
 
 def do_coco_evaluation(
     dataset,
@@ -388,6 +390,10 @@ def evaluate_depth_predictions(
     with open(json_result_file, "w") as f:
         json.dump(coco_results, f)
 
+    coco_dt = coco_gt.loadRes(str(json_result_file)) if coco_results else COCO()
+
+    coco_eval = DEPTHeval(coco_gt, coco_dt, iou_type)
+    coco_eval.evaluate()
 #############################################################################
 class COCOResults(object):
     METRICS = {
@@ -465,6 +471,97 @@ def check_expected_results(results, expected_results, sigma_tol):
 
 
 class DEPTHeval:
-    def __init__(self):
+    def __init__(self, cocoGt=None, cocoDt=None, iouType='depth'):
+        self.cocoGt = cocoGt  # ground truth COCO API
+        self.cocoDt = cocoDt  # detections COCO API
+
+        self.params = Params(iouType=iouType)  # parameters
         self.stats = []  # result summarization
         self.ious = {}  # ious between all gts and dts
+
+    def _prepare(self):
+        '''
+        Prepare ._gts and ._dts for evaluation based on params
+        :return: None
+        '''
+        def _toMask(anns, coco):
+            # modify ann['segmentation'] by reference
+            for ann in anns:
+                rle = coco.annToRLE(ann)
+                ann['segmentation'] = rle
+        p = self.params
+        if p.useCats:
+            gts=self.cocoGt.loadAnns(self.cocoGt.getAnnIds(imgIds=p.imgIds, catIds=p.catIds))
+            dts=self.cocoDt.loadAnns(self.cocoDt.getAnnIds(imgIds=p.imgIds, catIds=p.catIds))
+        else:
+            gts=self.cocoGt.loadAnns(self.cocoGt.getAnnIds(imgIds=p.imgIds))
+            dts=self.cocoDt.loadAnns(self.cocoDt.getAnnIds(imgIds=p.imgIds))
+
+        # convert ground truth to mask if iouType == 'segm'
+        # if p.iouType == 'segm':
+        #     _toMask(gts, self.cocoGt)
+        #     _toMask(dts, self.cocoDt)
+        # set ignore flag
+        for gt in gts:
+            gt['ignore'] = gt['ignore'] if 'ignore' in gt else 0
+            gt['ignore'] = 'iscrowd' in gt and gt['iscrowd']
+
+        self._gts = defaultdict(list)       # gt for evaluation
+        self._dts = defaultdict(list)       # dt for evaluation
+        for gt in gts:
+            self._gts[gt['image_id'], gt['category_id']].append(gt)
+        for dt in dts:
+            self._dts[dt['image_id'], dt['category_id']].append(dt)
+        self.evalImgs = defaultdict(list)   # per-image per-category evaluation results
+        self.eval = {}                  # accumulated evaluation results
+
+
+    def evaluate(self):
+        '''
+        Run per image evaluation on given images and store results (a list of dict) in self.evalImgs
+        :return: None
+        '''
+        tic = time.time()
+        print('Running per image evaluation...')
+        p = self.params
+        # add backward compatibility if useSegm is specified in params
+
+        print('Evaluate annotation type *{}*'.format(p.iouType))
+        p.imgIds = list(np.unique(p.imgIds))
+        if p.useCats:
+            p.catIds = list(np.unique(p.catIds))
+        p.maxDets = sorted(p.maxDets)
+        self.params=p
+
+        self._prepare()
+        # loop through images, area range, max detection number
+        catIds = p.catIds if p.useCats else [-1]
+
+        if p.iouType == 'depth':
+            computeIoU = self.computeIoU
+
+        self.ious = {(imgId, catId): computeIoU(imgId, catId) \
+                        for imgId in p.imgIds
+                        for catId in catIds}
+
+        evaluateImg = self.evaluateImg
+        maxDet = p.maxDets[-1]
+        self.evalImgs = [evaluateImg(imgId, catId, areaRng, maxDet)
+                 for catId in catIds
+                 for areaRng in p.areaRng
+                 for imgId in p.imgIds
+             ]
+        self._paramsEval = copy.deepcopy(self.params)
+        toc = time.time()
+        print('DONE (t={:0.2f}s).'.format(toc-tic))
+
+class Params:
+    def __init__(self, iouType='depth'):
+        if iouType == 'depth':
+            self.setDepthParams()
+
+    def setDepthParams(self):
+        self.imgIds = []
+        self.catIds = []
+        self.maxDets = [1, 10, 100]
+        self.useCats = 1
