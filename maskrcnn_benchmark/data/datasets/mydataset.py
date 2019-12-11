@@ -9,6 +9,8 @@ from PIL import Image
 import os
 import numpy as np
 
+from .torch2.coco2 import CocoDetection2
+
 min_keypoints_per_image = 10
 
 
@@ -38,7 +40,8 @@ def has_valid_annotation(anno):
     return False
 
 
-class ScanNetDataset(torchvision.datasets.coco.CocoDetection):
+# class ScanNetDataset(torchvision.datasets.coco.CocoDetection):
+class ScanNetDataset(CocoDetection2):
     def __init__(
         self, ann_file, root, remove_images_without_annotations, transforms=None
     ):
