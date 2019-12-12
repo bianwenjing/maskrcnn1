@@ -100,7 +100,7 @@ class DEPTHeval(COCOeval):
 
 
         if p.iouType == 'depth':
-            computeIoU = self.computeIoU2
+            computeIoU = self.computeIoU
         elif p.iouType == 'segm' or p.iouType == 'bbox':
             computeIoU = self.computeIoU
         elif p.iouType == 'keypoints':
@@ -121,7 +121,7 @@ class DEPTHeval(COCOeval):
         toc = time.time()
         print('DONE (t={:0.2f}s).'.format(toc - tic))
 
-    def computeIoU2(self):
+    # def computeIoU2(self):
         
     def computeIoU(self, imgId, catId):
         p = self.params

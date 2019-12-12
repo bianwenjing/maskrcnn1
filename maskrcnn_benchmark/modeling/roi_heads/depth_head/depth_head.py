@@ -70,6 +70,7 @@ class ROIDepthHead(nn.Module):
 
         if not self.training:
             result = self.post_processor(depth_logits, proposals)
+            #result: boxlist
             return x, result, {}
 
         loss_depth = self.loss_evaluator(proposals, depth_logits, targets)

@@ -6,6 +6,7 @@ from collections import OrderedDict
 from tqdm import tqdm
 
 from maskrcnn_benchmark.modeling.roi_heads.mask_head.inference import Masker
+from maskrcnn_benchmark.modeling.roi_heads.box_head.inference import Masker as Masker2
 from maskrcnn_benchmark.structures.bounding_box import BoxList
 from maskrcnn_benchmark.structures.boxlist_ops import boxlist_iou
 import pycocotools.mask as mask_util
@@ -180,7 +181,7 @@ def prepare_for_coco_segmentation(predictions, dataset):
     return coco_results
 
 def prepare_for_depth(predictions, dataset):
-    # masker = Masker(threshold=0.5, padding=1)
+    masker = Masker2(threshold=0.5, padding=1)
     # assert isinstance(dataset, COCODataset)
     coco_results = []
     for image_id, prediction in tqdm(enumerate(predictions)):
