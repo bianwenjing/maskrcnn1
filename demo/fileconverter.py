@@ -98,11 +98,11 @@ def convert(img_path, json_file, mode, aa, bb):
 
 if __name__ == '__main__':
     img_path = '/home/wenjing/storage/ScanNetv2/train.txt'
-    json_file = '/home/wenjing/anno/train_depth_real.txt'
-    # convert(img_path, json_file, mode = 'train', aa = 100, bb = 100)
+    json_file = '/home/wenjing/anno/train.txt'
+    convert(img_path, json_file, mode = 'train', aa = 50, bb = 200)
     # a in range 1,119
     img_path = '/home/wenjing/storage/ScanNetv2/val.txt'
-    json_file = '/home/wenjing/anno/val_depth_small.txt'
+    json_file = '/home/wenjing/anno/val.txt'
     convert(img_path, json_file, mode='val', aa=10, bb= 200)
 
     # b in range 1, 45

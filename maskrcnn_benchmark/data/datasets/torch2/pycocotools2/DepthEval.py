@@ -64,7 +64,8 @@ class DEPTHeval(COCOeval):
             self._gts[gt['image_id'], gt['category_id']].append(gt)
         for dt in dts:
             self._dts[dt['image_id'], dt['category_id']].append(dt)
-        # print('£££££££', self._gts)
+        # print('£££££££', len(self._gts))  # 348, number of ground truth items (anno id+1)
+        # print('$$$$$$$$', len(self._dts)) # 981, number of detected items
 
         self.evalImgs = defaultdict(list)  # per-image per-category evaluation results
         self.eval = {}  # accumulated evaluation results
@@ -100,7 +101,7 @@ class DEPTHeval(COCOeval):
 
 
         if p.iouType == 'depth':
-            computeIoU = self.computeIoU
+            computeIoU = self.computeIoU2
         elif p.iouType == 'segm' or p.iouType == 'bbox':
             computeIoU = self.computeIoU
         elif p.iouType == 'keypoints':
@@ -121,7 +122,14 @@ class DEPTHeval(COCOeval):
         toc = time.time()
         print('DONE (t={:0.2f}s).'.format(toc - tic))
 
-    # def computeIoU2(self):
+    def computeIoU2(self, imgId, catId):
+        p = self.params
+        if p.useCats:
+            gt = self._gts[imgId, catId]
+            dt = self._dts[imgId, catId]
+        else:
+            gt = [_ for cId in p.catIds for _ in self._gts[imgId, cId]]
+            dt = [_ for cId in p.catIds for _ in self._dts[imgId, cId]]
         
     def computeIoU(self, imgId, catId):
         p = self.params

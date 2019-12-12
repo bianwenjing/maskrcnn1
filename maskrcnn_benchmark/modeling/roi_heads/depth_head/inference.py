@@ -115,7 +115,7 @@ def expand_masks(mask, padding):
     return padded_mask, scale
 
 
-def paste_mask_in_image(mask, box, im_h, im_w, thresh=0.5, padding=1):
+def paste_mask_in_image(mask, box, padding=1):
     # Need to work on the CPU, where fp16 isn't supported - cast to float to avoid this
     mask = mask.float()
     box = box.float()
@@ -139,23 +139,23 @@ def paste_mask_in_image(mask, box, im_h, im_w, thresh=0.5, padding=1):
     mask = interpolate(mask, size=(h, w), mode='bilinear', align_corners=False)
     mask = mask[0][0]
 
-    if thresh >= 0:
-        mask = mask > thresh
-    else:
-        # for visualization and debugging, we also
-        # allow it to return an unmodified mask
-        mask = (mask * 255).to(torch.bool)
-
-    im_mask = torch.zeros((im_h, im_w), dtype=torch.bool)
-    x_0 = max(box[0], 0)
-    x_1 = min(box[2] + 1, im_w)
-    y_0 = max(box[1], 0)
-    y_1 = min(box[3] + 1, im_h)
-
-    im_mask[y_0:y_1, x_0:x_1] = mask[
-        (y_0 - box[1]) : (y_1 - box[1]), (x_0 - box[0]) : (x_1 - box[0])
-    ]
-    return im_mask
+    # if thresh >= 0:
+    #     mask = mask > thresh
+    # else:
+    #     # for visualization and debugging, we also
+    #     # allow it to return an unmodified mask
+    #     mask = (mask * 255).to(torch.bool)
+    #
+    # im_mask = torch.zeros((im_h, im_w), dtype=torch.bool)
+    # x_0 = max(box[0], 0)
+    # x_1 = min(box[2] + 1, im_w)
+    # y_0 = max(box[1], 0)
+    # y_1 = min(box[3] + 1, im_h)
+    #
+    # im_mask[y_0:y_1, x_0:x_1] = mask[
+    #     (y_0 - box[1]) : (y_1 - box[1]), (x_0 - box[0]) : (x_1 - box[0])
+    # ]
+    return mask
 
 
 class Masker(object):
@@ -164,15 +164,14 @@ class Masker(object):
     specified by the bounding boxes
     """
 
-    def __init__(self, threshold=0.5, padding=1):
-        self.threshold = threshold
+    def __init__(self, padding=1):
         self.padding = padding
 
     def forward_single_image(self, masks, boxes):
         boxes = boxes.convert("xyxy")
-        im_w, im_h = boxes.size
+
         res = [
-            paste_mask_in_image(mask[0], box, im_h, im_w, self.threshold, self.padding)
+            paste_mask_in_image(mask[0], box, self.padding)
             for mask, box in zip(masks, boxes.bbox)
         ]
         if len(res) > 0:

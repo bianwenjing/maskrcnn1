@@ -9,7 +9,7 @@ if PYTHON_VERSION == 2:
     from urllib import urlretrieve
 elif PYTHON_VERSION == 3:
     from urllib.request import urlretrieve
-
+import pycocotools.mask as maskUtils
 
 class COCO2(COCO):
     def loadRes(self, resFile):

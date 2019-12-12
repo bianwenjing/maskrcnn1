@@ -120,7 +120,6 @@ def paste_mask_in_image(mask, box, im_h, im_w, thresh=0.5, padding=1):
     # Need to work on the CPU, where fp16 isn't supported - cast to float to avoid this
     mask = mask.float()
     box = box.float()
-
     padded_mask, scale = expand_masks(mask[None], padding=padding)
     mask = padded_mask[0, 0]
     box = expand_boxes(box[None], scale)[0]
@@ -146,7 +145,7 @@ def paste_mask_in_image(mask, box, im_h, im_w, thresh=0.5, padding=1):
         # for visualization and debugging, we also
         # allow it to return an unmodified mask
         mask = (mask * 255).to(torch.bool)
-
+    # print("£££££££££££££££", mask.shape)
     im_mask = torch.zeros((im_h, im_w), dtype=torch.bool)
     x_0 = max(box[0], 0)
     x_1 = min(box[2] + 1, im_w)
@@ -171,7 +170,7 @@ class Masker(object):
 
     def forward_single_image(self, masks, boxes):
         boxes = boxes.convert("xyxy")
-        im_w, im_h = boxes.size
+        im_w, im_h = boxes.size # 1296 968
         res = [
             paste_mask_in_image(mask[0], box, im_h, im_w, self.threshold, self.padding)
             for mask, box in zip(masks, boxes.bbox)

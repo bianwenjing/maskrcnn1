@@ -6,7 +6,7 @@ from collections import OrderedDict
 from tqdm import tqdm
 
 from maskrcnn_benchmark.modeling.roi_heads.mask_head.inference import Masker
-from maskrcnn_benchmark.modeling.roi_heads.box_head.inference import Masker as Masker2
+from maskrcnn_benchmark.modeling.roi_heads.depth_head.inference import Masker as Masker2
 from maskrcnn_benchmark.structures.bounding_box import BoxList
 from maskrcnn_benchmark.structures.boxlist_ops import boxlist_iou
 import pycocotools.mask as mask_util
@@ -130,7 +130,6 @@ def prepare_for_coco_detection(predictions, dataset):
 
 
 def prepare_for_coco_segmentation(predictions, dataset):
-
     masker = Masker(threshold=0.5, padding=1)
     # assert isinstance(dataset, COCODataset)
     coco_results = []
@@ -143,9 +142,10 @@ def prepare_for_coco_segmentation(predictions, dataset):
         image_width = img_info["width"]
         image_height = img_info["height"]
         prediction = prediction.resize((image_width, image_height))
-        masks = prediction.get_field("mask")
+        masks = prediction.get_field("mask") # masks [num<100, 1, 28, 28]
         # t = time.time()
         # Masker is necessary only if masks haven't been already resized.
+
         if list(masks.shape[-2:]) != [image_height, image_width]:
             masks = masker(masks.expand(1, -1, -1, -1, -1), prediction)
             masks = masks[0]
@@ -181,9 +181,10 @@ def prepare_for_coco_segmentation(predictions, dataset):
     return coco_results
 
 def prepare_for_depth(predictions, dataset):
-    masker = Masker2(threshold=0.5, padding=1)
+    masker = Masker2()
     # assert isinstance(dataset, COCODataset)
     coco_results = []
+    # print('%%%%%%%%%%%', len(predictions)) #number of validation images
     for image_id, prediction in tqdm(enumerate(predictions)):
         original_id = dataset.id_to_img_map[image_id]
         if len(prediction) == 0:
@@ -198,10 +199,10 @@ def prepare_for_depth(predictions, dataset):
 
         # t = time.time()
         # Masker is necessary only if masks haven't been already resized.
-        # if list(depths.shape[-2:]) != [image_height, image_width]:
-        #      depths = masker(depths.expand(1, -1, -1, -1, -1), prediction)
-        #      depths = depths[0]
 
+        depths = masker(depths.expand(1, -1, -1, -1, -1), prediction)
+        depths = depths[0]
+        # print('WWWWWWWWWWWWWWWWWWWWWW', depths)
         # logger.info('Time mask: {}'.format(time.time() - t))
         # prediction = prediction.convert('xywh')
 
@@ -405,9 +406,10 @@ def evaluate_depth_predictions(
 ):
     with open(json_result_file, "w") as f:
         json.dump(coco_results, f)
-    # print('opopopopopop_coco_gt', coco_gt)
+
     coco_dt = coco_gt.loadRes(str(json_result_file)) if coco_results else COCO2()
-    # coco_eval = COCOeval(coco_gt, coco_dt, iou_type)
+
+
     coco_eval = DEPTHeval(coco_gt, coco_dt, iou_type)
     coco_eval.evaluate()
 
