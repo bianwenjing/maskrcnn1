@@ -44,6 +44,7 @@ class COCO2(COCO):
                 # ann['area'] =
                 ann['id'] = id + 1
                 ann['iscrowd'] = 0
+
         elif 'bbox' in anns[0] and not anns[0]['bbox'] == []:
             res.dataset['categories'] = copy.deepcopy(self.dataset['categories'])
             for id, ann in enumerate(anns):

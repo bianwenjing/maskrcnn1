@@ -102,7 +102,7 @@ if __name__ == '__main__':
     convert(img_path, json_file, mode = 'train', aa = 50, bb = 200)
     # a in range 1,119
     img_path = '/home/wenjing/storage/ScanNetv2/val.txt'
-    json_file = '/home/wenjing/anno/val.txt'
-    convert(img_path, json_file, mode='val', aa=10, bb= 200)
+    json_file = '/home/wenjing/anno/val_depth_smaller.txt'
+    convert(img_path, json_file, mode='val', aa=10, bb= 1000)
 
     # b in range 1, 45

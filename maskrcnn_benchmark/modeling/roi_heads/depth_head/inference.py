@@ -115,7 +115,7 @@ def expand_masks(mask, padding):
     return padded_mask, scale
 
 
-def paste_mask_in_image(mask, box, padding=1):
+def paste_mask_in_image(mask, box, im_h, im_w, padding=1):
     # Need to work on the CPU, where fp16 isn't supported - cast to float to avoid this
     mask = mask.float()
     box = box.float()
@@ -138,7 +138,6 @@ def paste_mask_in_image(mask, box, padding=1):
     mask = mask.to(torch.float32)
     mask = interpolate(mask, size=(h, w), mode='bilinear', align_corners=False)
     mask = mask[0][0]
-
     # if thresh >= 0:
     #     mask = mask > thresh
     # else:
@@ -146,16 +145,16 @@ def paste_mask_in_image(mask, box, padding=1):
     #     # allow it to return an unmodified mask
     #     mask = (mask * 255).to(torch.bool)
     #
-    # im_mask = torch.zeros((im_h, im_w), dtype=torch.bool)
-    # x_0 = max(box[0], 0)
-    # x_1 = min(box[2] + 1, im_w)
-    # y_0 = max(box[1], 0)
-    # y_1 = min(box[3] + 1, im_h)
-    #
-    # im_mask[y_0:y_1, x_0:x_1] = mask[
-    #     (y_0 - box[1]) : (y_1 - box[1]), (x_0 - box[0]) : (x_1 - box[0])
-    # ]
-    return mask
+    im_mask = torch.zeros((im_h, im_w))
+    x_0 = max(box[0], 0)
+    x_1 = min(box[2] + 1, im_w)
+    y_0 = max(box[1], 0)
+    y_1 = min(box[3] + 1, im_h)
+
+    im_mask[y_0:y_1, x_0:x_1] = mask[
+        (y_0 - box[1]) : (y_1 - box[1]), (x_0 - box[0]) : (x_1 - box[0])
+    ]
+    return im_mask
 
 
 class Masker(object):
@@ -169,15 +168,19 @@ class Masker(object):
 
     def forward_single_image(self, masks, boxes):
         boxes = boxes.convert("xyxy")
+        im_w, im_h = boxes.size  # 1296 968
 
         res = [
-            paste_mask_in_image(mask[0], box, self.padding)
+            paste_mask_in_image(mask[0], box, im_h, im_w, self.padding)
             for mask, box in zip(masks, boxes.bbox)
         ]
+
         if len(res) > 0:
             res = torch.stack(res, dim=0)[:, None]
         else:
             res = masks.new_empty((0, 1, masks.shape[-2], masks.shape[-1]))
+        print('((((((((((((((((((((((((', res.shape)
+
         return res
 
     def __call__(self, masks, boxes):

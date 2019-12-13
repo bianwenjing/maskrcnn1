@@ -179,6 +179,7 @@ class Masker(object):
             res = torch.stack(res, dim=0)[:, None]
         else:
             res = masks.new_empty((0, 1, masks.shape[-2], masks.shape[-1]))
+        # print('£££££££££££££££££££££', res.shape) #[47,1,968,1296]
         return res
 
     def __call__(self, masks, boxes):

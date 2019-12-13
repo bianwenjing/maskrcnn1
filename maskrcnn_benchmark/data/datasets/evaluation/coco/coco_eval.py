@@ -70,7 +70,6 @@ def do_coco_evaluation(
         # predictions: list of BoxList
         # dataset: ScanNetDataset
         logger.info('Preparing depth results')
-
         coco_results["depth"] = prepare_for_depth(predictions, dataset)
 
     results = COCOResults(*iou_types)
@@ -195,14 +194,14 @@ def prepare_for_depth(predictions, dataset):
         image_height = img_info["height"]
         prediction = prediction.resize((image_width, image_height))
         depths = prediction.get_field("depth")
-        # depths.shape [100, 1, 28, 28]
+        # depths.shape [48, 1, 28, 28]
 
         # t = time.time()
         # Masker is necessary only if masks haven't been already resized.
 
         depths = masker(depths.expand(1, -1, -1, -1, -1), prediction)
         depths = depths[0]
-        # print('WWWWWWWWWWWWWWWWWWWWWW', depths)
+        # print('WWWWWWWWWWWWWWWWWWWWWW', depths.shape)
         # logger.info('Time mask: {}'.format(time.time() - t))
         # prediction = prediction.convert('xywh')
 
@@ -392,10 +391,10 @@ def evaluate_predictions_on_coco(
 
 
 
-    coco_dt = coco_gt.loadRes(str(json_result_file)) if coco_results else COCO()
+    coco_dt = coco_gt.loadRes(str(json_result_file)) if coco_results else COCO2()
 
     # coco_dt = coco_gt.loadRes(coco_results)
-    coco_eval = COCOeval(coco_gt, coco_dt, iou_type)
+    coco_eval = DEPTHeval(coco_gt, coco_dt, iou_type)
     coco_eval.evaluate()
     coco_eval.accumulate()
     coco_eval.summarize()
@@ -404,14 +403,16 @@ def evaluate_predictions_on_coco(
 def evaluate_depth_predictions(
     coco_gt, coco_results, json_result_file, iou_type="depth"
 ):
+    print('QQQQQQQQQQQQQQQQQQQQQQQQQQQ',coco_results)
     with open(json_result_file, "w") as f:
         json.dump(coco_results, f)
-
+    print('************json file finished**************')
     coco_dt = coco_gt.loadRes(str(json_result_file)) if coco_results else COCO2()
-
-
     coco_eval = DEPTHeval(coco_gt, coco_dt, iou_type)
     coco_eval.evaluate()
+    # coco_eval.accumulate()
+    # coco_eval.summarize()
+    return coco_eval
 
 
 
