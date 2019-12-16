@@ -207,7 +207,8 @@ def prepare_for_depth(predictions, dataset):
         depths = depths[0]
         output_dir = cfg.OUTPUT_DIR + '/' + str(image_id)
         dep_dir = []
-        for i in range(depths[0]):
+        print('^^^^^^^^^^^^^^^^^^^', depths[0])
+        for i in range(int(depths[0])):
             print('*****************', depths[i].shape)
             dd = output_dir / f"{i}.png"
             print(dd)
