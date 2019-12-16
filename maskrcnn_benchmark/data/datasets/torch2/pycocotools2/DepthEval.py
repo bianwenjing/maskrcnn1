@@ -67,7 +67,6 @@ class DEPTHeval(COCOeval):
             self._dts[dt['image_id'], dt['category_id']].append(dt)
           # number of ground truth items (anno id+1)
         # len(self._dts): 111, number of detected items
-        print('$$$$$$$$$$$$$$$$$$$$$$$', dt)
         self.evalImgs = defaultdict(list)  # per-image per-category evaluation results
         self.eval = {}  # accumulated evaluation results
 
@@ -129,8 +128,7 @@ class DEPTHeval(COCOeval):
         else:
             gt = [_ for cId in p.catIds for _ in self._gts[imgId, cId]]
             dt = [_ for cId in p.catIds for _ in self._dts[imgId, cId]]
-        print('!!!!!!!!!!!!!!!!!!!!!!', gt)
-        print('dddddddddddddddddddddd', dt)
+
         if len(gt) == 0 or len(dt) ==0:
             return []
         inds = np.argsort([-d['score'] for d in dt], kind='mergesort')
@@ -144,22 +142,30 @@ class DEPTHeval(COCOeval):
             d = [d['depth'] for d in dt]
         else:
             raise Exception('unknown iouType for iou computation')
-        depth_g = Image.open(g).resize(1296,968)
+        # print('!!!!!!!!!!!!!!!!!!!!!!', g)
+        depth_g = Image.open('/home/wenjing/storage/ScanNetv2/'+ g[0]).resize((1296,968))
+        depth_g = np.array(depth_g)
         depth_d = d # bbox non-zero
+        ############################################################
+
+        ###########################################################
+
+        depth_d = depth_d[0]
+        # print('dddddddddddddddddddddd', depth_d)
         depth_g[(depth_d==0)]=0
 
         rmse = (depth_d - depth_g)**2
         rmse = np.sqrt(rmse.mean())
-
+        print('@@@@@@@@@@@@@@@@@@', rmse)
         rmse_log = (np.log(depth_g) - np.log(depth_d))**2
-        rmse_log = np.sqrt(rmse_log.mean)
+        rmse_log = np.sqrt(rmse_log.mean())
 
         abs_rel = np.mean(np.abs(depth_d - depth_g)/depth_g)
         sq_rel = np.mean(((depth_g-depth_d)**2)/depth_g)
 
         log10_error = np.abs(np.log10(depth_g)-np.log10(depth_d))
         log10_mean = np.mean(log10_error)
-        return
+        return rmse
 
 
     def computeIoU(self, imgId, catId):
@@ -301,7 +307,7 @@ class Params:
     def setDepthParams(self):
         self.imgIds = []
         self.catIds = []
-        # self.maxDets = [1, 10, 100]
+        self.maxDets = [1, 10, 100]
         self.useCats = 1
         # self.areaRng = [[0 ** 2, 1e5 ** 2], [0 ** 2, 32 ** 2], [32 ** 2, 96 ** 2], [96 ** 2, 1e5 ** 2]]
         # self.areaRngLbl = ['all', 'small', 'medium', 'large']

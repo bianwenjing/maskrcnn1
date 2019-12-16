@@ -148,6 +148,7 @@ def prepare_for_coco_segmentation(predictions, dataset):
         if list(masks.shape[-2:]) != [image_height, image_width]:
             masks = masker(masks.expand(1, -1, -1, -1, -1), prediction)
             masks = masks[0]
+            # masks.shape(num, 1, 968, 1296)
         # logger.info('Time mask: {}'.format(time.time() - t))
         # prediction = prediction.convert('xywh')
 
@@ -201,7 +202,8 @@ def prepare_for_depth(predictions, dataset):
 
         depths = masker(depths.expand(1, -1, -1, -1, -1), prediction)
         depths = depths[0]
-        # print('WWWWWWWWWWWWWWWWWWWWWW', depths.shape)
+
+        print('WWWWWWWWWWWWWWWWWWWWWW', depths.shape)
         # logger.info('Time mask: {}'.format(time.time() - t))
         # prediction = prediction.convert('xywh')
 
@@ -403,7 +405,7 @@ def evaluate_predictions_on_coco(
 def evaluate_depth_predictions(
     coco_gt, coco_results, json_result_file, iou_type="depth"
 ):
-    print('QQQQQQQQQQQQQQQQQQQQQQQQQQQ',coco_results)
+    # print('QQQQQQQQQQQQQQQQQQQQQQQQQQQ',coco_results)
     with open(json_result_file, "w") as f:
         json.dump(coco_results, f)
     print('************json file finished**************')
@@ -493,222 +495,3 @@ def check_expected_results(results, expected_results, sigma_tol):
 
 ###########################################################################################################################
 
-
-###########################################################################################################################
-# class DEPTHeval:
-#     def __init__(self, cocoGt=None, cocoDt=None, iouType='depth'):
-#         self.cocoGt = cocoGt  # ground truth COCO API
-#         self.cocoDt = cocoDt  # detections COCO API
-#
-#         self.params = Params(iouType=iouType)  # parameters
-#         self.stats = []  # result summarization
-#         self.ious = {}  # ious between all gts and dts
-#
-#     def _prepare(self):
-#         '''
-#         Prepare ._gts and ._dts for evaluation based on params
-#         :return: None
-#         '''
-#         def _toMask(anns, coco):
-#             # modify ann['segmentation'] by reference
-#             for ann in anns:
-#                 rle = coco.annToRLE(ann)
-#                 ann['segmentation'] = rle
-#         p = self.params
-#         if p.useCats:
-#             gts=self.cocoGt.loadAnns(self.cocoGt.getAnnIds(imgIds=p.imgIds, catIds=p.catIds))
-#             dts=self.cocoDt.loadAnns(self.cocoDt.getAnnIds(imgIds=p.imgIds, catIds=p.catIds))
-#         else:
-#             gts=self.cocoGt.loadAnns(self.cocoGt.getAnnIds(imgIds=p.imgIds))
-#             dts=self.cocoDt.loadAnns(self.cocoDt.getAnnIds(imgIds=p.imgIds))
-#
-#         # convert ground truth to mask if iouType == 'segm'
-#         # if p.iouType == 'segm':
-#         #     _toMask(gts, self.cocoGt)
-#         #     _toMask(dts, self.cocoDt)
-#         # set ignore flag
-#         for gt in gts:
-#             gt['ignore'] = gt['ignore'] if 'ignore' in gt else 0
-#             gt['ignore'] = 'iscrowd' in gt and gt['iscrowd']
-#
-#         self._gts = defaultdict(list)       # gt for evaluation
-#         self._dts = defaultdict(list)       # dt for evaluation
-#         for gt in gts:
-#             self._gts[gt['image_id'], gt['category_id']].append(gt)
-#         for dt in dts:
-#             self._dts[dt['image_id'], dt['category_id']].append(dt)
-#         self.evalImgs = defaultdict(list)   # per-image per-category evaluation results
-#         self.eval = {}                  # accumulated evaluation results
-#
-#
-#     def evaluate(self):
-#         '''
-#         Run per image evaluation on given images and store results (a list of dict) in self.evalImgs
-#         :return: None
-#         '''
-#         tic = time.time()
-#         print('Running per image evaluation...')
-#         p = self.params
-#         # add backward compatibility if useSegm is specified in params
-#
-#         print('Evaluate annotation type *{}*'.format(p.iouType))
-#         p.imgIds = list(np.unique(p.imgIds))
-#         if p.useCats:
-#             p.catIds = list(np.unique(p.catIds))
-#         p.maxDets = sorted(p.maxDets)
-#         self.params=p
-#
-#         self._prepare()
-#         # loop through images, area range, max detection number
-#         catIds = p.catIds if p.useCats else [-1]
-#
-#         if p.iouType == 'depth':
-#             computeIoU = self.computeIoU
-#
-#         self.ious = {(imgId, catId): computeIoU(imgId, catId) \
-#                         for imgId in p.imgIds
-#                         for catId in catIds}
-#
-#         evaluateImg = self.evaluateImg
-#         maxDet = p.maxDets[-1]
-#         self.evalImgs = [evaluateImg(imgId, catId, areaRng, maxDet)
-#                  for catId in catIds
-#                  for areaRng in p.areaRng
-#                  for imgId in p.imgIds
-#              ]
-#         self._paramsEval = copy.deepcopy(self.params)
-#         toc = time.time()
-#         print('DONE (t={:0.2f}s).'.format(toc-tic))
-#
-#     def computeIoU(self, imgId, catId):
-#         p = self.params
-#         if p.useCats:
-#             gt = self._gts[imgId,catId]
-#             dt = self._dts[imgId,catId]
-#         else:
-#             gt = [_ for cId in p.catIds for _ in self._gts[imgId,cId]]
-#             dt = [_ for cId in p.catIds for _ in self._dts[imgId,cId]]
-#         if len(gt) == 0 and len(dt) ==0:
-#             return []
-#         inds = np.argsort([-d['score'] for d in dt], kind='mergesort')
-#         dt = [dt[i] for i in inds]
-#         if len(dt) > p.maxDets[-1]:
-#             dt=dt[0:p.maxDets[-1]]
-#
-#         # print('eeeeeeeeeeeeeeeeee', dt, gt)
-#
-#         if p.iouType == 'depth':
-#             g = [g['depth'] for g in gt]
-#             d = [d['depth'] for d in dt]
-#         else:
-#             raise Exception('unknown iouType for iou computation')
-#
-#         # compute iou between each dt and gt region
-#         iscrowd = [int(o['iscrowd']) for o in gt]
-#         # ious = maskUtils.iou(d,g,iscrowd)
-#         ious = 0
-#         return ious
-#
-# class Params:
-#     def __init__(self, iouType='depth'):
-#         if iouType == 'depth':
-#             self.setDepthParams()
-#
-#     def setDepthParams(self):
-#         self.imgIds = []
-#         self.catIds = []
-#         self.maxDets = [1, 10, 100]
-#         self.useCats = 1
-
-##########################################################################################################################
-
-
-############################################################################################################################
-# class COCO2:
-#     def __init__(self, annotation_file=None):
-#         """
-#         Constructor of Microsoft COCO helper class for reading and visualizing annotations.
-#         :param annotation_file (str): location of annotation file
-#         :param image_folder (str): location to the folder that hosts images.
-#         :return:
-#         """
-#         # load dataset
-#         self.dataset,self.anns,self.cats,self.imgs = dict(),dict(),dict(),dict()
-#         self.imgToAnns, self.catToImgs = defaultdict(list), defaultdict(list)
-#         if not annotation_file == None:
-#             print('loading annotations into memory...')
-#             tic = time.time()
-#             dataset = json.load(open(annotation_file, 'r'))
-#             assert type(dataset)==dict, 'annotation file format {} not supported'.format(type(dataset))
-#             print('Done (t={:0.2f}s)'.format(time.time()- tic))
-#             self.dataset = dataset
-#             self.createIndex()
-#
-#     def createIndex(self):
-#         # create index
-#         print('creating index...')
-#         anns, cats, imgs = {}, {}, {}
-#         imgToAnns,catToImgs = defaultdict(list),defaultdict(list)
-#         if 'annotations' in self.dataset:
-#             for ann in self.dataset['annotations']:
-#                 imgToAnns[ann['image_id']].append(ann)
-#                 anns[ann['id']] = ann
-#
-#         if 'images' in self.dataset:
-#             for img in self.dataset['images']:
-#                 imgs[img['id']] = img
-#
-#         if 'categories' in self.dataset:
-#             for cat in self.dataset['categories']:
-#                 cats[cat['id']] = cat
-#
-#         if 'annotations' in self.dataset and 'categories' in self.dataset:
-#             for ann in self.dataset['annotations']:
-#                 catToImgs[ann['category_id']].append(ann['image_id'])
-#
-#         print('index created!')
-#
-#         # create class members
-#         self.anns = anns
-#         self.imgToAnns = imgToAnns
-#         self.catToImgs = catToImgs
-#         self.imgs = imgs
-#         self.cats = cats
-#
-#     def loadRes(self, resFile):
-#         """
-#         Load result file and return a result api object.
-#         :param   resFile (str)     : file name of result file
-#         :return: res (obj)         : result api object
-#         """
-#         res = COCO2()
-#         res.dataset['images'] = [img for img in self.dataset['images']]
-#
-#         print('Loading and preparing results...')
-#         tic = time.time()
-#         if type(resFile) == str or (PYTHON_VERSION == 2 and type(resFile) == unicode):
-#             anns = json.load(open(resFile))
-#         elif type(resFile) == np.ndarray:
-#             anns = self.loadNumpyAnnotations(resFile)
-#         else:
-#             anns = resFile
-#         assert type(anns) == list, 'results in not an array of objects'
-#         annsImgIds = [ann['image_id'] for ann in anns]
-#         assert set(annsImgIds) == (set(annsImgIds) & set(self.getImgIds())), \
-#             'Results do not correspond to current coco set'
-#         if 'caption' in anns[0]:
-#             imgIds = set([img['id'] for img in res.dataset['images']]) & set([ann['image_id'] for ann in anns])
-#             res.dataset['images'] = [img for img in res.dataset['images'] if img['id'] in imgIds]
-#             for id, ann in enumerate(anns):
-#                 ann['id'] = id + 1
-#         elif 'depth' in anns[0]:
-#             res.dataset['categories'] = copy.deepcopy(self.dataset['categories'])
-#             for id, ann in enumerate(anns):
-#                 # ann['area'] =
-#                 ann['id'] = id + 1
-#                 ann['iscrowd'] = 0
-#         print('DONE (t={:0.2f}s)'.format(time.time() - tic))
-#
-#         res.dataset['annotations'] = anns
-#         res.createIndex()
-#         return res

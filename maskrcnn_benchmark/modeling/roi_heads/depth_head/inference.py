@@ -145,7 +145,7 @@ def paste_mask_in_image(mask, box, im_h, im_w, padding=1):
     #     # allow it to return an unmodified mask
     #     mask = (mask * 255).to(torch.bool)
     #
-    im_mask = torch.zeros((im_h, im_w))
+    im_mask = torch.zeros((im_h, im_w), dtype = torch.int16)
     x_0 = max(box[0], 0)
     x_1 = min(box[2] + 1, im_w)
     y_0 = max(box[1], 0)
@@ -179,7 +179,7 @@ class Masker(object):
             res = torch.stack(res, dim=0)[:, None]
         else:
             res = masks.new_empty((0, 1, masks.shape[-2], masks.shape[-1]))
-        print('((((((((((((((((((((((((', res.shape)
+        # print('((((((((((((((((((((((((', res.shape)
 
         return res
 
