@@ -28,6 +28,9 @@ if PYTHON_VERSION == 2:
 elif PYTHON_VERSION == 3:
     from urllib.request import urlretrieve
 
+from PIL import Image
+from maskrcnn_benchmark.config import cfg
+
 def do_coco_evaluation(
     dataset,
     predictions,
@@ -202,8 +205,15 @@ def prepare_for_depth(predictions, dataset):
 
         depths = masker(depths.expand(1, -1, -1, -1, -1), prediction)
         depths = depths[0]
+        output_dir = cfg.OUTPUT_DIR + '/' + str(image_id)
+        dep_dir = []
+        for i in range(depths[0]):
+            print('*****************', depths[i].shape)
+            dd = output_dir / f"{i}.png"
+            print(dd)
+            Image.fromarray(depths[i]).save(dd)
+            dep_dir.append(dd)
 
-        print('WWWWWWWWWWWWWWWWWWWWWW', depths.shape)
         # logger.info('Time mask: {}'.format(time.time() - t))
         # prediction = prediction.convert('xywh')
 
@@ -217,20 +227,32 @@ def prepare_for_depth(predictions, dataset):
         #     mask_util.encode(np.array(depth[0, :, :, np.newaxis],  dtype=np.uint8, order="F"))[0]
         #     for depth in depths
         # ]
+
         # for rle in rles:
         #     rle["counts"] = rle["counts"].decode("utf-8")
 
         mapped_labels = [dataset.contiguous_category_id_to_json_id[i] for i in labels]
 
+        # coco_results.extend(
+        #     [
+        #         {
+        #             "image_id": original_id,
+        #             "category_id": mapped_labels[k],
+        #             "depth": np.array(depth).tolist(),
+        #             "score": scores[k],
+        #         }
+        #         for k, depth in enumerate(depths)
+        #     ]
+        # )
         coco_results.extend(
             [
                 {
                     "image_id": original_id,
                     "category_id": mapped_labels[k],
-                    "depth": np.array(depth).tolist(),
+                    "depth": depth,
                     "score": scores[k],
                 }
-                for k, depth in enumerate(depths)
+                for k, depth in enumerate(dep_dir)
             ]
         )
     return coco_results

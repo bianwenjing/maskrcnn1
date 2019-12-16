@@ -22,6 +22,9 @@ class DEPTHeval(COCOeval):
         self._paramsEval = {}               # parameters for evaluation
         self.stats = []                     # result summarization
         self.ious = {}                      # ious between all gts and dts
+        ###################################################################
+        self.depth_error = {}
+        ####################################################################
         if not cocoGt is None:
             self.params.imgIds = sorted(cocoGt.getImgIds())
             self.params.catIds = sorted(cocoGt.getCatIds())
@@ -99,28 +102,35 @@ class DEPTHeval(COCOeval):
 
 
         if p.iouType == 'depth':
-            computeIoU = self.computeIoU2
-        elif p.iouType == 'segm' or p.iouType == 'bbox':
-            computeIoU = self.computeIoU
-        elif p.iouType == 'keypoints':
-            computeIoU = self.computeOks
+            compute_depth_metrics = self.compute_depth_metrics
+            self.depth_error = {(imgId, catIds): compute_depth_metrics(imgId, catId) \
+                                for imgId in p.imgIds
+                                for catId in catIds}
+            print('£££££££££££££££££££££££££', self.depth_error)
+        else:
+            if p.iouType == 'segm' or p.iouType == 'bbox':
+                computeIoU = self.computeIoU
 
-        self.ious = {(imgId, catId): computeIoU(imgId, catId) \
-                     for imgId in p.imgIds
-                     for catId in catIds}
+            elif p.iouType == 'keypoints':
+                computeIoU = self.computeOks
 
-        evaluateImg = self.evaluateImg
-        maxDet = p.maxDets[-1]
-        self.evalImgs = [evaluateImg(imgId, catId, areaRng, maxDet)
-                         for catId in catIds
-                         for areaRng in p.areaRng
+            self.ious = {(imgId, catId): computeIoU(imgId, catId) \
                          for imgId in p.imgIds
-                         ]
-        self._paramsEval = copy.deepcopy(self.params)
+                         for catId in catIds}
+
+
+            evaluateImg = self.evaluateImg
+            maxDet = p.maxDets[-1]
+            self.evalImgs = [evaluateImg(imgId, catId, areaRng, maxDet)
+                             for catId in catIds
+                             for areaRng in p.areaRng
+                             for imgId in p.imgIds
+                             ]
+            self._paramsEval = copy.deepcopy(self.params)
         toc = time.time()
         print('DONE (t={:0.2f}s).'.format(toc - tic))
 
-    def computeIoU2(self, imgId, catId):
+    def compute_depth_metrics(self, imgId, catId):
         p = self.params
         if p.useCats:
             gt = self._gts[imgId, catId]
@@ -154,9 +164,15 @@ class DEPTHeval(COCOeval):
         # print('dddddddddddddddddddddd', depth_d)
         depth_g[(depth_d==0)]=0
 
+        thresh = np.maximum((depth_g/depth_d), (depth_d/depth_g))
+        a1 = (thresh < 1.25).mean
+        a2 = (thresh < 1.25 ** 2).mean
+        a3 = (thresh < 1.25 ** 3).mean()
+
         rmse = (depth_d - depth_g)**2
         rmse = np.sqrt(rmse.mean())
         print('@@@@@@@@@@@@@@@@@@', rmse)
+
         rmse_log = (np.log(depth_g) - np.log(depth_d))**2
         rmse_log = np.sqrt(rmse_log.mean())
 
@@ -165,7 +181,7 @@ class DEPTHeval(COCOeval):
 
         log10_error = np.abs(np.log10(depth_g)-np.log10(depth_d))
         log10_mean = np.mean(log10_error)
-        return rmse
+        return abs_rel, sq_rel, rmse, rmse_log, a1, a2, a3, log10_mean
 
 
     def computeIoU(self, imgId, catId):
