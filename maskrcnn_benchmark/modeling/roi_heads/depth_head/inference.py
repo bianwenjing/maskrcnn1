@@ -34,8 +34,9 @@ class MaskPostProcessor(nn.Module):
             results (list[BoxList]): one BoxList for each image, containing
                 the extra field mask
         """
-        mask_prob = x.sigmoid()
-
+        # print('22222222222', x)
+        # mask_prob = x.sigmoid()
+        mask_prob = x
         # select masks coresponding to the predicted classes
         num_masks = x.shape[0]
         labels = [bbox.get_field("labels") for bbox in boxes]
@@ -145,7 +146,7 @@ def paste_mask_in_image(mask, box, im_h, im_w, padding=1):
     #     # allow it to return an unmodified mask
     #     mask = (mask * 255).to(torch.bool)
     #
-    im_mask = torch.zeros((im_h, im_w), dtype = torch.int16)
+    im_mask = torch.zeros((im_h, im_w), dtype=torch.int16)
     x_0 = max(box[0], 0)
     x_1 = min(box[2] + 1, im_w)
     y_0 = max(box[1], 0)

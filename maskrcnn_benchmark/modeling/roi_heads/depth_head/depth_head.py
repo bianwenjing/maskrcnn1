@@ -64,7 +64,10 @@ class ROIDepthHead(nn.Module):
             x = features
             x = x[torch.cat(positive_inds, dim=0)]
         else:
-            x = self.feature_extractor(features, proposals)
+            if self.training:
+                x = self.feature_extractor(features, targets)
+            else:
+                x = self.feature_extractor(features, proposals)
         depth_logits = self.predictor(x)
         # depth_logits shape (# of proposals, 20 classes, 28, 28)
 
@@ -73,9 +76,9 @@ class ROIDepthHead(nn.Module):
             #result: boxlist
             return x, result, {}
 
-        loss_depth = self.loss_evaluator(proposals, depth_logits, targets)
-
-        return x, all_proposals, dict(loss_depth=loss_depth)
+        # loss_depth = self.loss_evaluator(proposals, depth_logits, targets)
+        loss_depth = self.loss_evaluator(targets, depth_logits, targets)
+        return x, targets, dict(loss_depth=loss_depth)
 
 
 def build_roi_depth_head(cfg, in_channels):

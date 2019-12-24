@@ -198,6 +198,7 @@ def prepare_for_depth(predictions, dataset):
         image_height = img_info["height"]
         prediction = prediction.resize((image_width, image_height))
         depths = prediction.get_field("depth")
+        # print('@@@@@@@@@@@@@@@@@', depths[0][0])
         # depths.shape [48, 1, 28, 28]
 
         # t = time.time()
@@ -205,16 +206,14 @@ def prepare_for_depth(predictions, dataset):
 
         depths = masker(depths.expand(1, -1, -1, -1, -1), prediction)
         depths = depths[0]
-        output_dir = cfg.OUTPUT_DIR + '/' + str(image_id)
+        output_dir = cfg.OUTPUT_DIR + '/depth/' + str(image_id)
         dep_dir = []
-        print('^^^^^^^^^^^^^^^^^^^', depths[0])
-        for i in range(int(depths[0])):
-            print('*****************', depths[i].shape)
-            dd = output_dir / f"{i}.png"
-            print(dd)
-            Image.fromarray(depths[i]).save(dd)
+        for i in range(int(depths.shape[0])):
+            dd = output_dir + "_" + str(i) + ".png"
+            # dd = output_dir + "_" + str(i) + ".tiff"
+            Image.fromarray(np.array(depths[i][0])).save(dd)
             dep_dir.append(dd)
-
+        # print('@@@@@@@@@@@@@@',dep_dir)
         # logger.info('Time mask: {}'.format(time.time() - t))
         # prediction = prediction.convert('xywh')
 
@@ -436,7 +435,7 @@ def evaluate_depth_predictions(
     coco_eval = DEPTHeval(coco_gt, coco_dt, iou_type)
     coco_eval.evaluate()
     # coco_eval.accumulate()
-    # coco_eval.summarize()
+    coco_eval.summarize()
     return coco_eval
 
 
@@ -458,7 +457,7 @@ class COCOResults(object):
         ],
         "keypoints": ["AP", "AP50", "AP75", "APm", "APl"],
         # "depth": ["AP", "AP50", "AP75", "APm", "APl"],
-        "depth": ["abs_rel", "sq_rel", "rmse_log", "log10_mean", "a1", "a2", "a3"]
+        "depth": ["abs_rel", "sq_rel", "rmse", "rmse_log", "log10_mean", "a1", "a2", "a3"]
     }
 
     def __init__(self, *iou_types):
@@ -480,7 +479,6 @@ class COCOResults(object):
 
         res = self.results[iou_type]
         metrics = COCOResults.METRICS[iou_type]
-
         for idx, metric in enumerate(metrics):
             res[metric] = s[idx]
 

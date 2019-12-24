@@ -101,24 +101,44 @@ class DEPTHeval(COCOeval):
 
 
 
+        # if p.iouType == 'depth':
+        #     compute_depth_metrics = self.compute_depth_metrics
+        #     self.depth_error = {(imgId, catIds): compute_depth_metrics(imgId, catId) \
+        #                         for imgId in p.imgIds
+        #                         for catId in catIds}
+        #     print('£££££££££££££££££££££££££', self.depth_error)
+        # else:
+        #     if p.iouType == 'segm' or p.iouType == 'bbox':
+        #         computeIoU = self.computeIoU
+        #
+        #     elif p.iouType == 'keypoints':
+        #         computeIoU = self.computeOks
+        #
+        #     self.ious = {(imgId, catId): computeIoU(imgId, catId) \
+        #                  for imgId in p.imgIds
+        #                  for catId in catIds}
+        if p.iouType == 'segm' or p.iouType == 'bbox':
+            computeIoU = self.computeIoU
+        elif p.iouType =='depth':
+            computeIoU = self.compute_depth_metrics
+        elif p.iouType == 'keypoints':
+            computeIoU = self.computeOks
+
+        self.ious = {(imgId, catId): computeIoU(imgId, catId) \
+                    for imgId in p.imgIds
+                    for catId in catIds}
         if p.iouType == 'depth':
-            compute_depth_metrics = self.compute_depth_metrics
-            self.depth_error = {(imgId, catIds): compute_depth_metrics(imgId, catId) \
-                                for imgId in p.imgIds
-                                for catId in catIds}
-            print('£££££££££££££££££££££££££', self.depth_error)
+            error = []
+            for imgId in p.imgIds:
+                for catId in catIds:
+                    x=computeIoU(imgId, catId)
+                    if x!=[]:
+                        error.append(x)
+            error = np.asarray(error)
+            print('*****************', error.shape)
+            self.mean_error = np.mean(error, axis=0)
+            print('##################', self.mean_error)
         else:
-            if p.iouType == 'segm' or p.iouType == 'bbox':
-                computeIoU = self.computeIoU
-
-            elif p.iouType == 'keypoints':
-                computeIoU = self.computeOks
-
-            self.ious = {(imgId, catId): computeIoU(imgId, catId) \
-                         for imgId in p.imgIds
-                         for catId in catIds}
-
-
             evaluateImg = self.evaluateImg
             maxDet = p.maxDets[-1]
             self.evalImgs = [evaluateImg(imgId, catId, areaRng, maxDet)
@@ -127,6 +147,7 @@ class DEPTHeval(COCOeval):
                              for imgId in p.imgIds
                              ]
             self._paramsEval = copy.deepcopy(self.params)
+
         toc = time.time()
         print('DONE (t={:0.2f}s).'.format(toc - tic))
 
@@ -152,36 +173,51 @@ class DEPTHeval(COCOeval):
             d = [d['depth'] for d in dt]
         else:
             raise Exception('unknown iouType for iou computation')
-        # print('!!!!!!!!!!!!!!!!!!!!!!', g)
-        depth_g = Image.open('/home/wenjing/storage/ScanNetv2/'+ g[0]).resize((1296,968))
-        depth_g = np.array(depth_g)
-        depth_d = d # bbox non-zero
-        ############################################################
+        depth_g_ = Image.open('/home/wenjing/storage/ScanNetv2/' + g[0]).resize((1296, 968))
+        depth_g_ = np.array(depth_g_)
+        # depth_g.shape (968,1296)
 
-        ###########################################################
+        depth_d = np.zeros((968,1296))
+        for d_part in d:
+            depth_i = Image.open(d_part)
+            depth_i = np.array(depth_i)
+            depth_d = np.maximum(depth_d, depth_i)
 
-        depth_d = depth_d[0]
-        # print('dddddddddddddddddddddd', depth_d)
-        depth_g[(depth_d==0)]=0
+        depth_g_[(depth_d==0)]=0
+
+        #remove zeros to avoid divide by zero
+        depth_g = depth_g_[depth_g_ != 0]
+        depth_d = depth_d[depth_g_ != 0]
 
         thresh = np.maximum((depth_g/depth_d), (depth_d/depth_g))
-        a1 = (thresh < 1.25).mean
-        a2 = (thresh < 1.25 ** 2).mean
+        a1 = (thresh < 1.25).mean()
+        a2 = (thresh < 1.25 ** 2).mean()
         a3 = (thresh < 1.25 ** 3).mean()
 
         rmse = (depth_d - depth_g)**2
         rmse = np.sqrt(rmse.mean())
-        print('@@@@@@@@@@@@@@@@@@', rmse)
+        # print('@@@@@@@@@@@@@@@@@@', rmse)
 
         rmse_log = (np.log(depth_g) - np.log(depth_d))**2
         rmse_log = np.sqrt(rmse_log.mean())
 
+
+
+
         abs_rel = np.mean(np.abs(depth_d - depth_g)/depth_g)
+
+        # abs_rel_ = np.abs(depth_d - depth_g)/depth_g
+        # abs_rel_ = abs_rel_[np.logical_not(np.isinf(abs_rel_))]
+        # abs_rel = np.mean(abs_rel_)
         sq_rel = np.mean(((depth_g-depth_d)**2)/depth_g)
+        # sq_rel_ = (depth_g-depth_d)**2/depth_g
+        # sq_rel_ = sq_rel_[np.logical_not(np.isinf(sq_rel_))]
+        # sq_rel = np.mean(sq_rel_)
 
         log10_error = np.abs(np.log10(depth_g)-np.log10(depth_d))
         log10_mean = np.mean(log10_error)
-        return abs_rel, sq_rel, rmse, rmse_log, a1, a2, a3, log10_mean
+        metrics = [abs_rel, sq_rel, rmse, rmse_log, log10_mean, a1, a2, a3]
+        return metrics
 
 
     def computeIoU(self, imgId, catId):
@@ -290,9 +326,12 @@ class DEPTHeval(COCOeval):
             return stats
 
         def _summarize_Depth():
-            pass
+            stats = np.zeros((8,))
+            for i in range(8):
+                stats[i] = self.mean_error[i]
+            return stats
 
-        if not self.eval:
+        if not self.eval and self.params.iouType != 'depth':
             raise Exception('Please run accumulate() first')
         iouType = self.params.iouType
         if iouType == 'segm' or iouType == 'bbox':
