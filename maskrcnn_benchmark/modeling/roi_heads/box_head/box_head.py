@@ -20,6 +20,10 @@ class ROIBoxHead(torch.nn.Module):
             cfg, self.feature_extractor.out_channels)
         self.post_processor = make_roi_box_post_processor(cfg)
         self.loss_evaluator = make_roi_box_loss_evaluator(cfg)
+        ##############################################################################
+        for name, param in self.named_parameters():
+            param.requires_grad = False
+        #########################################################################
 
     def forward(self, features, proposals, targets=None):
         """

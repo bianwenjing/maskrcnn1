@@ -64,13 +64,7 @@ class GeneralizedRCNN(nn.Module):
             losses.update(proposal_losses)
 
             return losses
- ###################################
-        # if self.training and target_depth is not None:
-        #     with torch.no_grad():
-        #         images = to_image_list(images)
-        #         features = self.backbone(images.tensors)
-        #         proposals, proposal_losses = self.rpn(images, features, targets)
-        #         x, result, detector_losses = self.roi_heads(features, proposals, targets)
+
 
         return result
 

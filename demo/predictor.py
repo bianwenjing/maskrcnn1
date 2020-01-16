@@ -7,8 +7,10 @@ from maskrcnn_benchmark.modeling.detector import build_detection_model
 from maskrcnn_benchmark.utils.checkpoint import DetectronCheckpointer
 from maskrcnn_benchmark.structures.image_list import to_image_list
 from maskrcnn_benchmark.modeling.roi_heads.mask_head.inference import Masker
+from maskrcnn_benchmark.modeling.roi_heads.depth_head.inference import Masker as Masker2
 from maskrcnn_benchmark import layers as L
 from maskrcnn_benchmark.utils import cv2_util
+import numpy as np
 
 class Resize(object):
     def __init__(self, min_size, max_size):
@@ -181,6 +183,7 @@ class COCODemo(object):
 
         mask_threshold = -1 if show_mask_heatmaps else 0.5
         self.masker = Masker(threshold=mask_threshold, padding=1)
+        self.masker2 = Masker2(padding=1)
 
         # used to make colors for each class
         self.palette = torch.tensor([2 ** 25 - 1, 2 ** 15 - 1, 2 ** 21 - 1])
@@ -221,7 +224,7 @@ class COCODemo(object):
         )
         return transform
 
-    def run_on_opencv_image(self, image):
+    def run_on_opencv_image(self, image, depth=False):
         """
         Arguments:
             image (np.ndarray): an image as returned by OpenCV
@@ -235,18 +238,24 @@ class COCODemo(object):
         top_predictions = self.select_top_predictions(predictions)
 
         result = image.copy()
-        if self.show_mask_heatmaps:
-            return self.create_mask_montage(result, top_predictions)
-        result = self.overlay_boxes(result, top_predictions)
-        if self.cfg.MODEL.MASK_ON:
-            result = self.overlay_mask(result, top_predictions)
-        if self.cfg.MODEL.KEYPOINT_ON:
-            result = self.overlay_keypoints(result, top_predictions)
-        if self.cfg.MODEL.DEPTH_ON:
-            result = self.overlay_depth(result, top_predictions)
-        result = self.overlay_class_names(result, top_predictions)
+        if depth == False:
+            if self.show_mask_heatmaps:
+                return self.create_mask_montage(result, top_predictions)
+            result = self.overlay_boxes(result, top_predictions)
+            if self.cfg.MODEL.MASK_ON:
+                result = self.overlay_mask(result, top_predictions)
+            if self.cfg.MODEL.KEYPOINT_ON:
+                result = self.overlay_keypoints(result, top_predictions)
 
-        return result
+            result = self.overlay_class_names(result, top_predictions)
+
+            return result
+        else:
+            if self.cfg.MODEL.DEPTH_ON:
+                result = self.overlay_depth(result, top_predictions)
+            return result
+
+
 
     def compute_prediction(self, original_image):
         """
@@ -285,7 +294,7 @@ class COCODemo(object):
             prediction.add_field("mask", masks)
         if prediction.has_field("depth"):
             depths = prediction.get_field("depth")
-            depths = self.masker([depths], [prediction])[0]
+            depths = self.masker2([depths], [prediction])[0]
             prediction.add_field("depth", depths)
         return prediction
 
@@ -381,16 +390,18 @@ class COCODemo(object):
         labels = predictions.get_field("labels")
 
         colors = self.compute_colors_for_labels(labels).tolist()
-
+        # depths.shape (num, 1, 968, 1296)
+        # print(colors)
+        map = np.zeros((1,968,1296))
         for depth, color in zip(depths, colors):
-            thresh = depth[0, :, :, None].astype(np.uint8)
-            contours, hierarchy = cv2_util.findContours(
-                thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE
-            )
-            image = cv2.drawContours(image, contours, -1, color, 3)
+            map += depth
+            # thresh = depth[0, :, :, None].astype(np.uint8)
+            # contours, hierarchy = cv2_util.findContours(
+            #     thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE
+            # )
+            # image = cv2.drawContours(image, contours, -1, color, 3)
 
-        composite = image
-
+        composite = map
         return composite
 
     def overlay_keypoints(self, image, predictions):
@@ -499,7 +510,6 @@ class COCODemo(object):
 
         return image
 
-import numpy as np
 import matplotlib.pyplot as plt
 from maskrcnn_benchmark.structures.keypoint import PersonKeypoints
 

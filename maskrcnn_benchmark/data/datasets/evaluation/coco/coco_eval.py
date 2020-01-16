@@ -31,6 +31,8 @@ elif PYTHON_VERSION == 3:
 from PIL import Image
 from maskrcnn_benchmark.config import cfg
 
+from maskrcnn_benchmark.utils.miscellaneous import mkdir
+
 def do_coco_evaluation(
     dataset,
     predictions,
@@ -211,6 +213,7 @@ def prepare_for_depth(predictions, dataset):
         for i in range(int(depths.shape[0])):
             dd = output_dir + "_" + str(i) + ".png"
             # dd = output_dir + "_" + str(i) + ".tiff"
+            mkdir(cfg.OUTPUT_DIR + '/depth')
             Image.fromarray(np.array(depths[i][0])).save(dd)
             dep_dir.append(dd)
         # print('@@@@@@@@@@@@@@',dep_dir)

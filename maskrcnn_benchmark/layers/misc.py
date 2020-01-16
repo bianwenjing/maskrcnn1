@@ -13,7 +13,8 @@ import math
 import torch
 from torch import nn
 from torch.nn.modules.utils import _ntuple
-
+import collections
+import torch.nn.functional as F
 
 class _NewEmptyTensorOp(torch.autograd.Function):
     @staticmethod
@@ -62,8 +63,52 @@ class ConvTranspose2d(torch.nn.ConvTranspose2d):
         ]
         output_shape = [x.shape[0], self.bias.shape[0]] + output_shape
         return _NewEmptyTensorOp.apply(x, output_shape)
+##############################################################################################################
+class Unpool(nn.Module):
+    # Unpool: 2*2 unpooling with zero padding
+    def __init__(self, num_channels, stride=2):
+        super(Unpool, self).__init__()
 
+        self.num_channels = num_channels
+        self.stride = stride
 
+    def forward(self, x):
+        weights = torch.zeros(self.num_channels, 1, self.stride, self.stride)
+        if torch.cuda.is_available():
+            weights = weights.cuda()
+        weights[:, :, 0, 0] = 1
+        return F.conv_transpose2d(x, weights, stride=self.stride, groups=self.num_channels)
+
+class UpProjModule(nn.Module):
+    # UpProj module has two branches, with a Unpool at the start and a ReLu at the end
+    #   upper branch: 5*5 conv -> batchnorm -> ReLU -> 3*3 conv -> batchnorm
+    #   bottom branch: 5*5 conv -> batchnorm
+
+    def __init__(self, in_channels, out_channels):
+        super(UpProjModule, self).__init__()
+        # out_channels = in_channels // 2
+        self.unpool = Unpool(in_channels)
+        self.upper_branch = nn.Sequential(collections.OrderedDict([
+            ('conv1', nn.Conv2d(in_channels, out_channels, kernel_size=5, stride=1, padding=2, bias=False)),
+            ('batchnorm1', nn.BatchNorm2d(out_channels)),
+            ('relu', nn.ReLU()),
+            ('conv2', nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=False)),
+            ('batchnorm2', nn.BatchNorm2d(out_channels)),
+        ]))
+        self.bottom_branch = nn.Sequential(collections.OrderedDict([
+            ('conv', nn.Conv2d(in_channels, out_channels, kernel_size=5, stride=1, padding=2, bias=False)),
+            ('batchnorm', nn.BatchNorm2d(out_channels)),
+        ]))
+        self.relu = nn.ReLU()
+
+    def forward(self, x):
+        x = self.unpool(x)
+        x1 = self.upper_branch(x)
+        x2 = self.bottom_branch(x)
+        x = x1 + x2
+        x = self.relu(x)
+        return x
+##############################################################################################################
 class BatchNorm2d(torch.nn.BatchNorm2d):
     def forward(self, x):
         if x.numel() > 0:

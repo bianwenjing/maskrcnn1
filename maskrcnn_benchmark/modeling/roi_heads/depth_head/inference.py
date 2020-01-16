@@ -146,7 +146,8 @@ def paste_mask_in_image(mask, box, im_h, im_w, padding=1):
     #     # allow it to return an unmodified mask
     #     mask = (mask * 255).to(torch.bool)
     #
-    im_mask = torch.zeros((im_h, im_w), dtype=torch.int16)
+    im_mask = torch.zeros((im_h, im_w), dtype=torch.int32)
+    # im_mask = torch.zeros((im_h, im_w))
     x_0 = max(box[0], 0)
     x_1 = min(box[2] + 1, im_w)
     y_0 = max(box[1], 0)
@@ -204,7 +205,7 @@ class Masker(object):
 def make_roi_depth_post_processor(cfg):
     if cfg.MODEL.ROI_DEPTH_HEAD.POSTPROCESS_MASKS:
         mask_threshold = cfg.MODEL.ROI_DEPTH_HEAD.POSTPROCESS_MASKS_THRESHOLD
-        masker = Masker(threshold=mask_threshold, padding=1)
+        masker = Masker(padding=1)
     else:
         masker = None
     mask_post_processor = MaskPostProcessor(masker)

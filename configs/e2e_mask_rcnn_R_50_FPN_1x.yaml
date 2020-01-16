@@ -1,7 +1,9 @@
 MODEL:
   META_ARCHITECTURE: "GeneralizedRCNN"
   # WEIGHT: "catalog://ImageNetPretrained/MSRA/R-50"
-  WEIGHT: "/home/wenjing/result/no_last_layers.pth"
+#  WEIGHT: "/home/wenjing/result/no_last_layers.pth"
+  WEIGHT: "/home/wenjing/result_/model_result1.pth"
+#  WEIGHT: "/home/wenjing/result_/0472500_result3.pth"
   BACKBONE:
     CONV_BODY: "R-50-FPN"
   RESNETS:
@@ -40,7 +42,7 @@ MODEL:
     SHARE_BOX_FEATURE_EXTRACTOR: False
 
 
-  MASK_ON: False
+  MASK_ON: True
   DEPTH_ON: True
 DATASETS:
 #  TRAIN: ("coco_2014_train", "coco_2014_valminusminival")

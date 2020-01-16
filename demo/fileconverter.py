@@ -52,6 +52,17 @@ def convert(img_path, json_file, mode, aa, bb):
             Js['images'].append(
                 {"file_name":  aline[:12] + '/color/' + str(jj) + ".jpg", "height": 968, "width": 1296,
                  "id": img_id})
+
+            intrinsic = []
+            intr_path = '/home/wenjing/storage/ScanNetv2/' + mode + '_intrinsics/' + aline[:12] +'/intrinsic/intrinsic_depth.txt'
+            intr_file = open(intr_path, "r")
+            matrix =intr_file.readlines()
+            f1 = matrix[0].split()[0]
+            intrinsic.append(float(f1))
+            f2 = matrix[1].split()[1]
+            intrinsic.append(float(f2))
+            intr_file.close()
+
             bbox = {}
             segment = {}
             class_20=np.array([1, 2, 3, 4, 5, 7, 8, 9, 11, 13, 14, 15, 16, 17, 18, 21, 27, 35, 55], dtype=np.int)
@@ -83,7 +94,7 @@ def convert(img_path, json_file, mode, aa, bb):
                         segment[cl] = d
 
                         Js['annotations'].append(
-                            {'segmentation': segment[cl], 'area': area, 'iscrowd': 0, 'image_id': img_id,
+                            {'intrinsic': intrinsic, 'segmentation': segment[cl], 'area': area, 'iscrowd': 0, 'image_id': img_id,
                              'bbox': bbox[cl], 'category_id': cl.item(), 'id': anno_id, 'depth': mode + '_depth/' + aline[:12]+ '/depth/' + str(jj) + '.png'})
                         # Js['annotations'].append(
                         #     {'segmentation': segment[cl], 'area': area, 'iscrowd': 0, 'image_id': img_id,
@@ -95,14 +106,15 @@ def convert(img_path, json_file, mode, aa, bb):
     json_str = json.dumps(Js, indent=4)
     json_fp.write(json_str)
     json_fp.close()
+    f.close()
 
 if __name__ == '__main__':
     img_path = '/home/wenjing/storage/ScanNetv2/train.txt'
-    json_file = '/home/wenjing/anno/train.txt'
+    json_file = '/home/wenjing/anno/train_focal.txt'
     convert(img_path, json_file, mode = 'train', aa = 50, bb = 200)
     # a in range 1,119
     img_path = '/home/wenjing/storage/ScanNetv2/val.txt'
-    json_file = '/home/wenjing/anno/val_depth_smaller.txt'
+    json_file = '/home/wenjing/anno/val_focal.txt'
     convert(img_path, json_file, mode='val', aa=10, bb= 1000)
 
     # b in range 1, 45

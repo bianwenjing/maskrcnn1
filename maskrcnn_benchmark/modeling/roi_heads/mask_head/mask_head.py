@@ -42,6 +42,10 @@ class ROIMaskHead(torch.nn.Module):
             cfg, self.feature_extractor.out_channels)
         self.post_processor = make_roi_mask_post_processor(cfg)
         self.loss_evaluator = make_roi_mask_loss_evaluator(cfg)
+        #####################################################
+        for name, param in self.named_parameters():
+            param.requires_grad = False
+        #####################################################
 
     def forward(self, features, proposals, targets=None):
         """
@@ -73,6 +77,7 @@ class ROIMaskHead(torch.nn.Module):
         if not self.training:
             result = self.post_processor(mask_logits, proposals)
             return x, result, {}
+        # print('mask_logits@######################',mask_logits)
 
         loss_mask = self.loss_evaluator(proposals, mask_logits, targets)
 

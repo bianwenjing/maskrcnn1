@@ -115,6 +115,12 @@ class ScanNetDataset(CocoDetection2):
         #     target.add_field("depth", depth)
 
 ###################################################################################
+###################################################################################
+        if anno and "intrinsic" in anno[0]:
+            intrinsic = [obj["intrinsic"] for obj in anno]
+            intrinsic = torch.tensor(intrinsic)
+            target.add_field("intrinsic", intrinsic)
+####################################################################################
         target = target.clip_to_image(remove_empty=True)
 
         if self._transforms is not None:

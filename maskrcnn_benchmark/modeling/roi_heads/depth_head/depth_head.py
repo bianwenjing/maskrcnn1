@@ -24,7 +24,7 @@ def keep_only_positive_boxes(boxes):
     num_boxes = 0
     for boxes_per_image in boxes:
         labels = boxes_per_image.get_field("labels")
-        inds_mask = labels > 0
+        inds_mask = labels > 0   #remove label = 0 (background)
         inds = inds_mask.nonzero().squeeze(1)
         positive_boxes.append(boxes_per_image[inds])
         positive_inds.append(inds_mask)
@@ -58,16 +58,17 @@ class ROIDepthHead(nn.Module):
 
         if self.training:
             # during training, only focus on positive boxes
+            ##############################
+            proposals = targets
+            ##############################
             all_proposals = proposals
             proposals, positive_inds = keep_only_positive_boxes(proposals)
         if self.training and self.cfg.MODEL.ROI_DEPTH_HEAD.SHARE_BOX_FEATURE_EXTRACTOR:
             x = features
             x = x[torch.cat(positive_inds, dim=0)]
         else:
-            if self.training:
-                x = self.feature_extractor(features, targets)
-            else:
-                x = self.feature_extractor(features, proposals)
+            x = self.feature_extractor(features, proposals)
+         # x.shape (num, 256, 14, 14)
         depth_logits = self.predictor(x)
         # depth_logits shape (# of proposals, 20 classes, 28, 28)
 
@@ -75,10 +76,11 @@ class ROIDepthHead(nn.Module):
             result = self.post_processor(depth_logits, proposals)
             #result: boxlist
             return x, result, {}
+        # print('@@@@@@@@@@@@@@@@@@@', depth_logits)
 
-        # loss_depth = self.loss_evaluator(proposals, depth_logits, targets)
-        loss_depth = self.loss_evaluator(targets, depth_logits, targets)
-        return x, targets, dict(loss_depth=loss_depth)
+        loss_depth = self.loss_evaluator(proposals, depth_logits, targets)
+        # loss_depth = self.loss_evaluator(targets, depth_logits, targets)
+        return x, all_proposals, dict(loss_depth=loss_depth)
 
 
 def build_roi_depth_head(cfg, in_channels):

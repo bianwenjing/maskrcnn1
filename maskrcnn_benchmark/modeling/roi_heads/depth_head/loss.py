@@ -6,7 +6,7 @@ from maskrcnn_benchmark.layers import smooth_l1_loss
 from maskrcnn_benchmark.modeling.matcher import Matcher
 from maskrcnn_benchmark.structures.boxlist_ops import boxlist_iou
 from maskrcnn_benchmark.modeling.utils import cat
-
+import numpy as np
 
 def project_masks_on_boxes(segmentation_masks, proposals, discretization_size):
     """
@@ -39,6 +39,7 @@ def project_masks_on_boxes(segmentation_masks, proposals, discretization_size):
         masks.append(mask)
     if len(masks) == 0:
         return torch.empty(0, dtype=torch.float32, device=device)
+
     return torch.stack(masks, dim=0).to(device, dtype=torch.float32)
 
 
@@ -56,7 +57,7 @@ class MaskRCNNLossComputation(object):
         match_quality_matrix = boxlist_iou(target, proposal)
         matched_idxs = self.proposal_matcher(match_quality_matrix)
         # Mask RCNN needs "labels" and "masks "fields for creating the targets
-        target = target.copy_with_fields(["labels", "depth"])
+        target = target.copy_with_fields(["labels", "depth", "masks", "intrinsic"])
         # get the targets corresponding GT for each proposal
         # NB: need to clamp the indices because we can have a single
         # GT in the image, and matched_idxs can be -2, which goes
@@ -68,6 +69,7 @@ class MaskRCNNLossComputation(object):
     def prepare_targets(self, proposals, targets):
         labels = []
         maps = []
+        masks=[]
         for proposals_per_image, targets_per_image in zip(proposals, targets):
             matched_targets = self.match_targets_to_proposals(
                 proposals_per_image, targets_per_image
@@ -88,16 +90,26 @@ class MaskRCNNLossComputation(object):
             depth_maps = matched_targets.get_field("depth")
             depth_maps = depth_maps[positive_inds]
 
+            segmentation_masks = matched_targets.get_field("masks")
+            segmentation_masks = segmentation_masks[positive_inds]
+
+            focal_i = matched_targets.get_field("intrinsic")
+
             positive_proposals = proposals_per_image[positive_inds]
 
             maps_per_image = project_masks_on_boxes(
                 depth_maps, positive_proposals, self.discretization_size
             )
+            masks_per_image = project_masks_on_boxes(
+                segmentation_masks, positive_proposals, self.discretization_size
+            )
+            # maps_per_image=maps_per_image * masks_per_image # apply segmentation mask to extract object from background
 
             labels.append(labels_per_image)
             maps.append(maps_per_image)
+            masks.append(masks_per_image)
 
-        return labels, maps
+        return labels, maps, masks, focal_i[0]
 
     def __call__(self, proposals, depth_logits, targets):
         """
@@ -110,12 +122,13 @@ class MaskRCNNLossComputation(object):
             mask_loss (Tensor): scalar tensor containing the loss
         """
 
-        labels, depth_targets = self.prepare_targets(proposals, targets)
-        # print('++++++++++',depth_logits, '££££££', labels)
+        labels, depth_targets, mask_targets, focal_i = self.prepare_targets(proposals, targets)
 
+         # len(depth_targets) batch size
 
         labels = cat(labels, dim=0)
         depth_targets = cat(depth_targets, dim=0)
+        mask_targets = cat(mask_targets, dim=0)
 
         positive_inds = torch.nonzero(labels > 0).squeeze(1)
         labels_pos = labels[positive_inds]
@@ -127,10 +140,59 @@ class MaskRCNNLossComputation(object):
         # depth_loss = F.binary_cross_entropy_with_logits(
         #     depth_logits[positive_inds, labels_pos], depth_targets
         # )
-        # print('depth000000000000',depth_targets.shape) #[num_proposal, 28, 28]
-
-        depth_loss = F.mse_loss(depth_logits[positive_inds, labels_pos], depth_targets)/100000
+        ######################################################
+        depth_pred = depth_logits[positive_inds, labels_pos] * mask_targets
+        depth_targets = depth_targets * mask_targets
+        depth_loss = F.mse_loss(depth_pred, depth_targets)
+        # depth_loss = self.berhu_loss(depth_pred, depth_targets, focal_i)
+        # depth_loss = self.adaptive_loss(depth_pred, depth_targets, focal_i, p1 = 0.5, p2 = 0.5)
+        ########################################################
+        #########################################################
+        # valid_mask = (mask_targets > 0).detach()
+        # depth_pred = depth_logits[positive_inds, labels_pos]
+        # depth_diff = depth_pred - depth_targets
+        # depth_diff = depth_diff[valid_mask]
+        # depth_loss = depth_diff.square().mean()
+        ##########################################################
         return depth_loss
+    def berhu_loss(self, depth_pred, depth_targets, focal_i):
+        focal_0 = 577
+        s=focal_0/focal_i[0]
+
+        depth_pred = s * depth_pred  # normalise
+        depth_targets = s * depth_targets
+
+        thre = torch.max(torch.abs(depth_pred - depth_targets))   #FCRN
+        thre = 0.2 * thre
+        valid_mask = (depth_targets > 0).detach()
+        diff = depth_targets - depth_pred
+        diff = diff[valid_mask]
+        diff = diff.abs()
+
+        huber_mask = (diff > thre).detach()
+        diff2 = diff[huber_mask]
+        diff2 = diff2 ** 2
+
+        depth_loss = torch.cat((diff, diff2)).mean()
+        return depth_loss
+
+    def grad_loss(self, depth_pred, depth_targets):
+        img_grad = self.gradient(depth_targets)   # not sure (different symbol used on paper)
+        pred_grad = self.gradient(depth_pred)
+        l = pred_grad * np.exp(img_grad)
+        return l
+
+    def adaptive_loss(self, depth_pred, depth_targets, focal_i, p1, p2):
+        loss = p1 * self.berhu_loss(depth_pred, depth_targets, focal_i) + p2 * self.grad_loss(depth_pred, depth_targets)
+        return loss
+
+
+
+    def gradient(self, img_gray):
+        gx = np.gradient(img_gray, axis=0)
+        gy = np.gradient(img_gray, axis=1)
+        g = gx * gx + gy * gy
+        return np.sqrt(g)
 
 
 def make_roi_depth_loss_evaluator(cfg):
@@ -145,3 +207,4 @@ def make_roi_depth_loss_evaluator(cfg):
     )
 
     return loss_evaluator
+

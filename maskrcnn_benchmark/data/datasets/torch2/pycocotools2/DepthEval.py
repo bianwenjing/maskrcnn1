@@ -135,7 +135,6 @@ class DEPTHeval(COCOeval):
                     if x!=[]:
                         error.append(x)
             error = np.asarray(error)
-            print('*****************', error.shape)
             self.mean_error = np.mean(error, axis=0)
             print('##################', self.mean_error)
         else:
@@ -166,7 +165,6 @@ class DEPTHeval(COCOeval):
         dt = [dt[i] for i in inds]
         if len(dt) > p.maxDets[-1]:
             dt = dt[0:p.maxDets[-1]]
-        # print('cccccccccccccccccccccc',dt)
 
         if p.iouType == 'depth':
             g = [g['depth'] for g in gt]
