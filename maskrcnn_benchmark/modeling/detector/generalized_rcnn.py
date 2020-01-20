@@ -12,6 +12,7 @@ from ..backbone import build_backbone
 from ..rpn.rpn import build_rpn
 from ..roi_heads.roi_heads import build_roi_heads
 import numpy as np
+from ..whole_depth_head.whole_depth_head import whole_depth
 
 
 
@@ -32,6 +33,8 @@ class GeneralizedRCNN(nn.Module):
         self.backbone = build_backbone(cfg)
         self.rpn = build_rpn(cfg, self.backbone.out_channels)
         self.roi_heads = build_roi_heads(cfg, self.backbone.out_channels)
+        ################################################
+        self.whole_depth = whole_depth()
     def forward(self, images, targets=None):
         """
         Arguments:

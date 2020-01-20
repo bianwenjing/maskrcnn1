@@ -54,7 +54,7 @@ class MaskRCNNC4Predictor(nn.Module):
     def forward(self, x):
         # x = F.relu(self.conv5_depth(x))
         x = self.conv5_depth(x)
-        # x = self.conv6_depth(x)   #change cfg.MODEL.ROI_DEPTH_HEAD.RESOLUTION accordingly
+        x = self.conv6_depth(x)   #change cfg.MODEL.ROI_DEPTH_HEAD.RESOLUTION accordingly
         return self.depth_fcn_logits(x)
 
 def make_roi_depth_predictor(cfg, in_channels):

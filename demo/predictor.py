@@ -388,21 +388,26 @@ class COCODemo(object):
         """
         depths = predictions.get_field("depth").numpy()
         labels = predictions.get_field("labels")
+        seg_masks = predictions.get_field("mask").numpy()
 
         colors = self.compute_colors_for_labels(labels).tolist()
         # depths.shape (num, 1, 968, 1296)
         # print(colors)
         map_ = np.zeros((1,968,1296))
-        for depth, color in zip(depths, colors):
-            mask = map_ == 0
+        ###########################################
+        ### obejcts + background
+        # for depth in depths:
+        #     mask = map_ == 0
+        #     depth = np.asarray(depth)
+        #     map_ += depth * mask
+        ##############################################################
+        ### only objects no background
+        for depth, seg_mask in zip(depths, seg_masks):
+            mask = map_== 0
             depth = np.asarray(depth)
+            depth = depth*seg_mask
             map_ += depth * mask
-            # thresh = depth[0, :, :, None].astype(np.uint8)
-            # contours, hierarchy = cv2_util.findContours(
-            #     thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE
-            # )
-            # image = cv2.drawContours(image, contours, -1, color, 3)
-
+        ##############################################################
         composite = map_
         return composite
 

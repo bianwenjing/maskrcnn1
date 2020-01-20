@@ -177,9 +177,11 @@ class DEPTHeval(COCOeval):
 
         depth_d = np.zeros((968,1296))
         for d_part in d:
+            mask = depth_d==0
             depth_i = Image.open(d_part)
             depth_i = np.array(depth_i)
-            depth_d = np.maximum(depth_d, depth_i)
+            # depth_d = np.maximum(depth_d, depth_i)
+            depth_d += depth_i * mask
 
         depth_g_[(depth_d==0)]=0
 
