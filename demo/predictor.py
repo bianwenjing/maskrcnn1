@@ -392,16 +392,18 @@ class COCODemo(object):
         colors = self.compute_colors_for_labels(labels).tolist()
         # depths.shape (num, 1, 968, 1296)
         # print(colors)
-        map = np.zeros((1,968,1296))
+        map_ = np.zeros((1,968,1296))
         for depth, color in zip(depths, colors):
-            map += depth
+            mask = map_ == 0
+            depth = np.asarray(depth)
+            map_ += depth * mask
             # thresh = depth[0, :, :, None].astype(np.uint8)
             # contours, hierarchy = cv2_util.findContours(
             #     thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE
             # )
             # image = cv2.drawContours(image, contours, -1, color, 3)
 
-        composite = map
+        composite = map_
         return composite
 
     def overlay_keypoints(self, image, predictions):

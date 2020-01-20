@@ -18,6 +18,7 @@ class MaskRCNNC4Predictor(nn.Module):
 
         # self.conv5_depth = ConvTranspose2d(num_inputs, dim_reduced, 2, 2, 0)
         self.conv5_depth = UpProjModule(num_inputs, dim_reduced)
+        self.conv6_depth = UpProjModule(dim_reduced, dim_reduced)
         self.depth_fcn_logits = Conv2d(dim_reduced, num_classes, 1, 1, 0)
 
         for name, param in self.named_parameters():
@@ -53,6 +54,7 @@ class MaskRCNNC4Predictor(nn.Module):
     def forward(self, x):
         # x = F.relu(self.conv5_depth(x))
         x = self.conv5_depth(x)
+        # x = self.conv6_depth(x)   #change cfg.MODEL.ROI_DEPTH_HEAD.RESOLUTION accordingly
         return self.depth_fcn_logits(x)
 
 def make_roi_depth_predictor(cfg, in_channels):

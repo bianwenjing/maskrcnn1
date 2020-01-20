@@ -21,7 +21,7 @@ config_file = "../configs/caffe2/e2e_mask_rcnn_R_50_FPN_1x_caffe2.yaml"
 # update the config options with the config file
 cfg.merge_from_file(config_file)
 # manual override some options
-cfg.merge_from_list(["MODEL.DEVICE", "cpu"])
+cfg.merge_from_list(["MODEL.DEVICE", "cuda"])
 
 coco_demo = COCODemo(
     cfg,
@@ -70,8 +70,17 @@ for ii in range(10):
         d_max = max(np.max(depth_pred), np.max(depth_target))
         depth_target_scaled = colored_depthmap(depth_target, d_min, d_max)
         depth_pred_scaled = colored_depthmap(depth_pred, d_min, d_max)
-        writer.add_image(str(ii) + '_depth', depth_pred, 0, dataformats='HW')
-        writer.add_image(str(ii)+'depth_ground', depth_target, 0, dataformats = 'HW')
+        save_path_pred = '/home/wenjing/test1/' + str(ii) + '_pred.png'
+        plt.imsave(save_path_pred, depth_pred_scaled)
+        depth_pred_scaled = Image.open(save_path_pred)
+        depth_pred_scaled = np.array(depth_pred_scaled)
+
+        save_path_target = '/home/wenjing/test1/' + str(ii) + '_target.png'
+        plt.imsave(save_path_target, depth_target_scaled)
+        depth_target_scaled = Image.open(save_path_target)
+        depth_target_scaled = np.array(depth_target_scaled)
+        writer.add_image(str(ii) + '_depth', depth_pred_scaled, 0, dataformats='HWC')
+        writer.add_image(str(ii)+'depth_ground', depth_target_scaled, 0, dataformats = 'HWC')
 writer.close()
 f.close()
 
