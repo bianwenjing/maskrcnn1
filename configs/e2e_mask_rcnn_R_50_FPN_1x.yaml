@@ -45,6 +45,8 @@ MODEL:
 
   MASK_ON: True
   DEPTH_ON: True
+  WHOLE_DEPTH_ON: True
+  MODEL_OPTION: 0
 DATASETS:
 #  TRAIN: ("coco_2014_train", "coco_2014_valminusminival")
 #  TEST: ("coco_2014_minival",)

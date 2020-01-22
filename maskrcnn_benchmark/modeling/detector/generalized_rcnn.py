@@ -33,8 +33,11 @@ class GeneralizedRCNN(nn.Module):
         self.backbone = build_backbone(cfg)
         self.rpn = build_rpn(cfg, self.backbone.out_channels)
         self.roi_heads = build_roi_heads(cfg, self.backbone.out_channels)
-        ################################################
-        self.whole_depth = whole_depth()
+        self.whole_depth_on = cfg.MODEL.WHOLE_DEPTH_ON
+        ###################################################################################
+        if self.whole_depth_on:
+            self.whole_depth = whole_depth(cfg, self.backbone.out_channels)
+        #####################################################################################
     def forward(self, images, targets=None):
         """
         Arguments:
@@ -51,24 +54,30 @@ class GeneralizedRCNN(nn.Module):
         if self.training and targets is None:
             raise ValueError("In training mode, targets should be passed")
         images = to_image_list(images)
-        features = self.backbone(images.tensors)
+        features, resnet_output = self.backbone(images.tensors)
+        # print('!!!!!!!!!!!!!!!!!', resnet_output.shape) (2,2048,25,34)
         proposals, proposal_losses = self.rpn(images, features, targets)
         if self.roi_heads:
             x, result, detector_losses = self.roi_heads(features, proposals, targets)
+
         else:
             # RPN-only models don't have roi_heads
             x = features
             result = proposals
             detector_losses = {}
-
+        if self.whole_depth_on:
+            x_depth, whole_depth_loss = self.whole_depth(resnet_output, targets)
         if self.training:
             losses = {}
             losses.update(detector_losses)
             losses.update(proposal_losses)
+            if self.whole_depth_on:
+                losses.update(whole_depth_loss)
 
             return losses
 
-
+        if self.whole_depth_on:
+            return result, x_depth
         return result
 
     # def flatten(self, x):
