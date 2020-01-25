@@ -26,14 +26,14 @@ def compute_on_dataset(model, data_loader, device, bbox_aug, timer=None):
             if bbox_aug:
                 output = im_detect_bbox_aug(model, images, device)
             else:
-                output = model(images.to(device))
+                output, whole_depth = model(images.to(device))
             if timer:
                 if not device.type == 'cpu':
                     torch.cuda.synchronize()
                 timer.toc()
             output = [o.to(cpu_device) for o in output]
         results_dict.update(
-            {img_id: result for img_id, result in zip(image_ids, output)}
+            {img_id: [result, whole_depth] for img_id, result, whole_depth in zip(image_ids, output, whole_depth)}
         )
     return results_dict
 
@@ -81,7 +81,7 @@ def inference(
     total_timer = Timer()
     inference_timer = Timer()
     total_timer.tic()
-    predictions = compute_on_dataset(model, data_loader, device, bbox_aug, inference_timer)
+    predictions= compute_on_dataset(model, data_loader, device, bbox_aug, inference_timer)
     # wait for all processes to complete before measuring the time
     synchronize()
     total_time = total_timer.toc()

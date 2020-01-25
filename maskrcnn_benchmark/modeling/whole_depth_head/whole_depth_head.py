@@ -2,6 +2,13 @@ import torch
 import torch.nn as nn
 import math
 from .loss import make_whole_depth_loss_evaluator
+from maskrcnn_benchmark.modeling.poolers import Pooler
+from maskrcnn_benchmark.modeling.make_layers import make_conv3x3
+from torch.nn import functional as F
+from maskrcnn_benchmark.layers import UpProjModule
+from maskrcnn_benchmark.layers import ConvTranspose2d
+from maskrcnn_benchmark.layers import Conv2d
+import numpy as np
 
 def weights_init(modules, type='xavier'):
     m = modules
@@ -229,15 +236,91 @@ class DORN(torch.nn.Module):
         return depth.float()
 
 class ORIG(torch.nn.Module):
-    def __init__(self):
+    def __init__(self, cfg, in_channels):
         super(ORIG, self).__init__()
 
+        # resolution = 28
+        # scales = cfg.MODEL.ROI_MASK_HEAD.POOLER_SCALES
+        # sampling_ratio = cfg.MODEL.ROI_MASK_HEAD.POOLER_SAMPLING_RATIO
+        # pooler = Pooler(
+        #     output_size=(resolution, resolution),
+        #     scales=scales,
+        #     sampling_ratio=sampling_ratio,
+        # )
+        input_size = in_channels
+        # self.pooler = pooler
+
+        use_gn = cfg.MODEL.WHOLE_DEPTH.USE_GN
+        layers = cfg.MODEL.WHOLE_DEPTH.CONV_LAYERS
+        dilation = cfg.MODEL.WHOLE_DEPTH.DILATION
+
+        next_feature = input_size
+        self.blocks = []
+        for layer_idx, layer_features in enumerate(layers, 1):
+            layer_name = "depth_fcn{}".format(layer_idx)
+            module = make_conv3x3(
+                next_feature, layer_features,
+                dilation=dilation, stride=1, use_gn=use_gn, use_relu=True
+            )
+            self.add_module(layer_name, module)
+            next_feature = layer_features
+            self.blocks.append(layer_name)
+        features_out_channels = layer_features
+##############################################################################################################################
+##predictor
+########################################################################################################################
+        # num_classes = cfg.MODEL.ROI_BOX_HEAD.NUM_CLASSES
+        num_classes = 1
+        dim_reduced = cfg.MODEL.WHOLE_DEPTH.CONV_LAYERS[-1]
+        num_inputs = features_out_channels
+
+        self.conv5_depth = ConvTranspose2d(num_inputs, dim_reduced, 2, 2, 0)
+        # self.conv5_depth = UpProjModule(num_inputs, dim_reduced)
+        # self.conv6_depth = UpProjModule(dim_reduced, dim_reduced)
+        self.depth_fcn_logits = Conv2d(dim_reduced, num_classes, 1, 1, 0)
+
+        for name, param in self.named_parameters():
+            if "bias" in name:
+                nn.init.constant_(param, 0)
+            # elif "weight" in name:
+            # Caffe2 implementation uses MSRAFill, which in fact
+            # corresponds to kaiming_normal_ in PyTorch
+            # nn.init.kaiming_normal_(param, mode="fan_out", nonlinearity="relu")
+
+            elif "batchnorm" in name:
+                nn.init.constant_(param, 1)
+            else:
+                nn.init.kaiming_normal_(param, nonlinearity="relu")
+        ###############################################################################
+        self.loss_evaluator = make_whole_depth_loss_evaluator(cfg)
+
+
+    def forward(self, x, targets = None):
+        # x = self.pooler(x, proposals)
+
+        for layer_name in self.blocks:
+            x = F.relu(getattr(self, layer_name)(x))
+        ###########################################
+        x = self.conv5_depth(x)
+        self.depth = self.conv5_depth(x)
+        x = self.depth
+        x = self.depth_fcn_logits(x)
+        # x=self.conv6_depth(x)
+        if x.shape[0]==1:  # batch size = 1 sometimes
+            x = x[0]
+        else:
+            x = torch.squeeze(x)
+        if not self.training:
+            return x, {}
+        loss = self.loss_evaluator(x, targets)
+
+        return x, dict(whole_depth_loss=loss)
 
 
 
 def whole_depth(cfg, in_channels):
-    model_option = cfg.MODEL.MODEL_OPTION
-    if model_option == 1:
-       return DORN(cfg,in_channels)
-    else:
-        return ORIG
+    model_option = cfg.MODEL.WHOLE_DEPTH.MODEL_OPTION
+    if model_option == 'DORN':
+        return DORN(cfg,in_channels)
+    elif model_option == 'ORIG':
+        return ORIG(cfg, in_channels)

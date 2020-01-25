@@ -36,7 +36,7 @@ class GeneralizedRCNN(nn.Module):
         self.whole_depth_on = cfg.MODEL.WHOLE_DEPTH_ON
         ###################################################################################
         if self.whole_depth_on:
-            self.whole_depth = whole_depth(cfg, self.backbone.out_channels)
+            self.whole_depth = whole_depth(cfg, 2048)
         #####################################################################################
     def forward(self, images, targets=None):
         """
@@ -78,7 +78,7 @@ class GeneralizedRCNN(nn.Module):
 
         if self.whole_depth_on:
             return result, x_depth
-        return result
+        return result, 0
 
     # def flatten(self, x):
     #     N = x.shape[0]  # read in N, C, H, W

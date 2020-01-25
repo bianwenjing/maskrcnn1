@@ -24,6 +24,7 @@ class DEPTHeval(COCOeval):
         self.ious = {}                      # ious between all gts and dts
         ###################################################################
         self.depth_error = {}
+        self.iou_type = iouType
         ####################################################################
         if not cocoGt is None:
             self.params.imgIds = sorted(cocoGt.getImgIds())
@@ -63,15 +64,18 @@ class DEPTHeval(COCOeval):
         self._gts = defaultdict(list)  # gt for evaluation
         self._dts = defaultdict(list)  # dt for evaluation
 
-        for gt in gts:
-            self._gts[gt['image_id'], gt['category_id']].append(gt)
-            # print('££££££££££££££££££', gt['image_id'], gt['category_id'])
-        for dt in dts:
-            self._dts[dt['image_id'], dt['category_id']].append(dt)
-          # number of ground truth items (anno id+1)
-        # len(self._dts): 111, number of detected items
-        self.evalImgs = defaultdict(list)  # per-image per-category evaluation results
-        self.eval = {}  # accumulated evaluation results
+        if self.iou_type == 'whole_depth':
+            pass
+        else:
+            for gt in gts:
+                self._gts[gt['image_id'], gt['category_id']].append(gt)
+                # print('££££££££££££££££££', gt['image_id'], gt['category_id'])
+            for dt in dts:
+                self._dts[dt['image_id'], dt['category_id']].append(dt)
+              # number of ground truth items (anno id+1)
+            # len(self._dts): 111, number of detected items
+            self.evalImgs = defaultdict(list)  # per-image per-category evaluation results
+            self.eval = {}  # accumulated evaluation results
 
     def evaluate(self):
         '''
@@ -89,7 +93,8 @@ class DEPTHeval(COCOeval):
         p.imgIds = list(np.unique(p.imgIds))
         if p.useCats:
             p.catIds = list(np.unique(p.catIds))
-        p.maxDets = sorted(p.maxDets)
+        if p.maxDets:
+            p.maxDets = sorted(p.maxDets)
         self.params = p
 
 
@@ -353,16 +358,21 @@ class Params:
             self.setDetParams()
         elif iouType == 'keypoints':
             self.setKpParams()
+        elif iouType == 'whole_depth':
+            self.set_whole_depth_params()
         else:
             raise Exception('iouType not supported')
         self.iouType = iouType
         # useSegm is deprecated
         self.useSegm = None
 
+    def set_whole_depth_params(self):
+        self.imgIds = []
+
     def setDepthParams(self):
         self.imgIds = []
         self.catIds = []
-        self.maxDets = [1, 10, 100]
+        # self.maxDets = [1, 10, 100]
         self.useCats = 1
         # self.areaRng = [[0 ** 2, 1e5 ** 2], [0 ** 2, 32 ** 2], [32 ** 2, 96 ** 2], [96 ** 2, 1e5 ** 2]]
         # self.areaRngLbl = ['all', 'small', 'medium', 'large']

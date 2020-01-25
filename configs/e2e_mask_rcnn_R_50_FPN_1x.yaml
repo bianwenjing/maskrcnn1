@@ -2,8 +2,8 @@ MODEL:
   META_ARCHITECTURE: "GeneralizedRCNN"
   # WEIGHT: "catalog://ImageNetPretrained/MSRA/R-50"
 #  WEIGHT: "/home/wenjing/result/no_last_layers.pth"
-  WEIGHT: "/home/wenjing/result_/model_result1.pth"
-#  WEIGHT: "/home/wenjing/result_/0472500_result3.pth"
+  WEIGHT: "/home/wenjing/storage/result/result_/model_result1.pth"
+#  WEIGHT: "/home/wenjing/storage/result/result_/0472500_result3.pth"
   BACKBONE:
     CONV_BODY: "R-50-FPN"
   RESNETS:
@@ -38,15 +38,15 @@ MODEL:
     PREDICTOR: "MaskRCNNC4Predictor"
     POOLER_RESOLUTION: 14
     POOLER_SAMPLING_RATIO: 2
-#    RESOLUTION: 28
-    RESOLUTION: 56
+    RESOLUTION: 28
+#    RESOLUTION: 56
     SHARE_BOX_FEATURE_EXTRACTOR: False
 
 
   MASK_ON: True
   DEPTH_ON: True
   WHOLE_DEPTH_ON: True
-  MODEL_OPTION: 0
+#  MODEL_OPTION: 0
 DATASETS:
 #  TRAIN: ("coco_2014_train", "coco_2014_valminusminival")
 #  TEST: ("coco_2014_minival",)

@@ -30,7 +30,7 @@ _C.MODEL.DEVICE = "cuda"
 _C.MODEL.META_ARCHITECTURE = "GeneralizedRCNN"
 _C.MODEL.CLS_AGNOSTIC_BBOX_REG = False
 _C.MODEL.WHOLE_DEPTH_ON = False
-_C.MODEL.MODEL_OPTION = 0
+# _C.MODEL.MODEL_OPTION = 0
 # If the WEIGHT starts with a catalog://, like :R-50, the code will look for
 # the path in paths_catalog. Else, it will use it as the specified absolute
 # path
@@ -266,6 +266,14 @@ _C.MODEL.ROI_DEPTH_HEAD.DILATION = 1
 # GN
 _C.MODEL.ROI_DEPTH_HEAD.USE_GN = False
 
+##############################################################################
+_C.MODEL.WHOLE_DEPTH = CN()
+_C.MODEL.WHOLE_DEPTH.CONV_LAYERS = (2048, 2048, 2048, 2048)
+_C.MODEL.WHOLE_DEPTH.USE_GN = False
+_C.MODEL.WHOLE_DEPTH.DILATION = 1
+_C.MODEL.WHOLE_DEPTH.MODEL_OPTION = 'ORIG'
+_C.MODEL.WHOLE_DEPTH.LOSS = 'MSE'
+##############################################################################
 
 _C.MODEL.ROI_KEYPOINT_HEAD = CN()
 _C.MODEL.ROI_KEYPOINT_HEAD.FEATURE_EXTRACTOR = "KeypointRCNNFeatureExtractor"

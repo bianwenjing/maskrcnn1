@@ -76,17 +76,20 @@ def do_coco_evaluation(
         # dataset: ScanNetDataset
         logger.info('Preparing depth results')
         coco_results["depth"] = prepare_for_depth(predictions, dataset)
-
+    if "whole_depth" in iou_types:
+        logger.info('Preparing whole depth result')
+        coco_results["whole_depth"] = prepare_for_whole_depth(predictions, dataset)
     results = COCOResults(*iou_types)
     logger.info("Evaluating predictions")
     for iou_type in iou_types:
-        # print('££££££££££', iou_type)
         with tempfile.NamedTemporaryFile() as f:
             file_path = f.name
             if output_folder:
                 file_path = os.path.join(output_folder, iou_type + ".json")
             if iou_type == 'depth':
                 res = evaluate_depth_predictions(dataset.coco, coco_results[iou_type], file_path, iou_type)
+            elif iou_types == 'whole_depth':
+                res = evaluate_whole_depth_prediction(dataset.coco, coco_results[iou_types], file_path, iou_type)
             else:
                 res = evaluate_predictions_on_coco(
                     dataset.coco, coco_results[iou_type], file_path, iou_type
@@ -103,6 +106,9 @@ def prepare_for_coco_detection(predictions, dataset):
     # assert isinstance(dataset, COCODataset)
     coco_results = []
     for image_id, prediction in enumerate(predictions):
+        ###################################################################################
+        prediction = prediction[0]  # prediction[1] is for whole depth
+        #######################################################################################
         original_id = dataset.id_to_img_map[image_id]
         if len(prediction) == 0:
             continue
@@ -138,6 +144,9 @@ def prepare_for_coco_segmentation(predictions, dataset):
     # assert isinstance(dataset, COCODataset)
     coco_results = []
     for image_id, prediction in tqdm(enumerate(predictions)):
+        ###################################################################################
+        prediction = prediction[0]  # prediction[1] is for whole depth
+        #######################################################################################
         original_id = dataset.id_to_img_map[image_id]
         if len(prediction) == 0:
             continue
@@ -191,6 +200,9 @@ def prepare_for_depth(predictions, dataset):
     coco_results = []
     # print('%%%%%%%%%%%', len(predictions)) #number of validation images
     for image_id, prediction in tqdm(enumerate(predictions)):
+        ###################################################################################
+        prediction = prediction[0]  # prediction[1] is for whole depth
+        #######################################################################################
         original_id = dataset.id_to_img_map[image_id]
         if len(prediction) == 0:
             continue
@@ -260,6 +272,36 @@ def prepare_for_depth(predictions, dataset):
         )
     return coco_results
 
+def prepare_for_whole_depth(predictions, dataset):
+    # assert isinstance(dataset, COCODataset)
+    coco_results = []
+    # print('%%%%%%%%%%%', len(predictions)) #number of validation images
+    for image_id, prediction in tqdm(enumerate(predictions)):
+        prediction = prediction[1]
+        original_id = dataset.id_to_img_map[image_id]
+        if len(prediction) == 0:
+            continue
+
+        img_info = dataset.get_img_info(image_id)
+        # image_width = img_info["width"]
+        # image_height = img_info["height"]
+        # prediction = prediction.resize((image_width, image_height))
+
+
+        output_dir = cfg.OUTPUT_DIR + '/whole_depth/' + str(image_id) + ".png"
+        # dd = output_dir + "_" + str(i) + ".tiff"
+        mkdir(cfg.OUTPUT_DIR + '/whole_depth')
+        Image.fromarray(np.array(prediction).save(output_dir))
+
+        coco_results.extend(
+            [
+                {
+                    "image_id": original_id,
+                    "whole_depth": output_dir,
+                }
+            ]
+        )
+    return coco_results
 
 def prepare_for_coco_keypoint(predictions, dataset):
     # assert isinstance(dataset, COCODataset)
@@ -441,7 +483,15 @@ def evaluate_depth_predictions(
     coco_eval.summarize()
     return coco_eval
 
-
+def evaluate_whole_depth_prediction(
+        coco_gt, coco_results, json_result_file, iou_type
+):
+    with open(json_result_file, "w") as f:
+        json.dump(coco_results, f)
+    print('************json file finished**************')
+    coco_dt = coco_gt.loadRes(str(json_result_file)) if coco_results else COCO2()
+    coco_eval = DEPTHeval(coco_gt, coco_dt, iou_type)
+    coco_eval.evaluate()
 
 #############################################################################
 class COCOResults(object):

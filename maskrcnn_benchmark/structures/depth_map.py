@@ -98,6 +98,7 @@ class BinaryMaskList(object):
                 "Type of `masks` argument could not be interpreted:%s"
                 % type(masks)
             )
+        # print(masks.shape,'£££££££££££££££££££££££')
 
         if len(masks.shape) == 2:
             # if only a single instance mask is passed
@@ -108,7 +109,6 @@ class BinaryMaskList(object):
         assert masks.shape[2] == size[0], "%s != %s" % (masks.shape[2], size[0])
 
         self.masks = masks
-        # print(masks.shape,'£££££££££££££££££££££££')
         self.size = tuple(size)
 
     def transpose(self, method):
@@ -231,7 +231,6 @@ class DepthMap(object):
 
         assert isinstance(size[0], (int, float))
         assert isinstance(size[1], (int, float))
-
 
         if mode == "mask":
             self.instances = BinaryMaskList(instances, size)

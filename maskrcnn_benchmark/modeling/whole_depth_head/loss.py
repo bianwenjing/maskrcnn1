@@ -1,6 +1,6 @@
 import torch
-
-class WHOLE_DEPTH_LOSS(object):
+import torch.nn.functional as F
+class DORN_LOSS(object):
     def __call__(self, ord_labels, target):
         """
         :param ord_labels: ordinal labels for each position of Image I.
@@ -64,10 +64,34 @@ class WHOLE_DEPTH_LOSS(object):
         self.loss /= (-N)  # negative
         return self.loss
 
+class ORIG_LOSS(object):
+    def __call__(self, pred, targets):
+        depth_targets = []
+        w = pred.shape[1]
+        h = pred.shape[2]
+        for box in targets:
+            box = box.get_field("depth").resize((h, w)).get_mask_tensor()
+            if len(box.shape)==3:
+                box = torch.squeeze(box[0])
+            # print('$$$$$$$$$$$$$$$$', box.shape)
+            depth_targets.append(box)
+
+        depth_targets_tensor = depth_targets[0]
+
+        depth_targets.pop(0)
+        for depth_target in depth_targets:
+            depth_targets_tensor = torch.stack((depth_targets_tensor, depth_target))
+        depth_targets_tensor = depth_targets_tensor.cuda().float()
+        loss = F.mse_loss(pred, depth_targets_tensor)
+        return loss
 
 
 
-
-def make_whole_depth_loss_evaluator():
-    loss_evaluator = WHOLE_DEPTH_LOSS()
+def make_whole_depth_loss_evaluator(cfg):
+    # loss_type = cfg.MODEL.WHOLE_DEPTH.LOSS
+    model_option = cfg.MODEL.WHOLE_DEPTH.MODEL_OPTION
+    if model_option == 'ORIG':
+        loss_evaluator = ORIG_LOSS()
+    elif model_option == 'DORN':
+        loss_evaluator = DORN_LOSS()
     return loss_evaluator

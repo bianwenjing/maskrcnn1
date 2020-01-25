@@ -113,6 +113,8 @@ def run_test(cfg, model, distributed):
         iou_types = iou_types + ("keypoints",)
     if cfg.MODEL.DEPTH_ON:
         iou_types = iou_types + ("depth",)
+    if cfg.MODEL.WHOLE_DEPTH_ON:
+        iou_types = iou_types + ("whole_depth",)
     output_folders = [None] * len(cfg.DATASETS.TEST)
     dataset_names = cfg.DATASETS.TEST
     if cfg.OUTPUT_DIR:
