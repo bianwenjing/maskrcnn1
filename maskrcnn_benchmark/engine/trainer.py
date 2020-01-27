@@ -76,7 +76,7 @@ def do_train(
         iou_types = iou_types + ("depth",)
     dataset_names = cfg.DATASETS.TEST
 
-    writer = SummaryWriter()
+    # writer = SummaryWriter()
 
     for iteration, (images, targets, _) in enumerate(data_loader, start_iter):
         if any(len(target) < 1 for target in targets):
@@ -95,13 +95,13 @@ def do_train(
 
         print('%%%%%%%%%%%%%%', iteration, loss_dict['loss_depth'])
         #
-        writer.add_scalar('classifier loss',loss_dict['loss_classifier'], iteration)
-        writer.add_scalar('box reg loss', loss_dict['loss_box_reg'], iteration)
-        writer.add_scalar('mask loss', loss_dict['loss_mask'], iteration)
-        writer.add_scalar('whole_depth loss', loss_dict['whole_depth_loss'], iteration)
-        writer.add_scalar('depth loss', loss_dict['loss_depth'], iteration)
-        writer.add_scalar('objectness loss', loss_dict['loss_objectness'], iteration)
-        writer.add_scalar('rpn box reg loss', loss_dict['loss_rpn_box_reg'], iteration)
+        # writer.add_scalar('classifier loss',loss_dict['loss_classifier'], iteration)
+        # writer.add_scalar('box reg loss', loss_dict['loss_box_reg'], iteration)
+        # writer.add_scalar('mask loss', loss_dict['loss_mask'], iteration)
+        # writer.add_scalar('whole_depth loss', loss_dict['whole_depth_loss'], iteration)
+        # writer.add_scalar('depth loss', loss_dict['loss_depth'], iteration)
+        # writer.add_scalar('objectness loss', loss_dict['loss_objectness'], iteration)
+        # writer.add_scalar('rpn box reg loss', loss_dict['loss_rpn_box_reg'], iteration)
 
 
         # reduce losses over all GPUs for logging purposes
@@ -193,7 +193,7 @@ def do_train(
             )
         if iteration == max_iter:
             checkpointer.save("model_final", **arguments)
-    writer.close()
+    # writer.close()
     total_training_time = time.time() - start_training_time
     total_time_str = str(datetime.timedelta(seconds=total_training_time))
     logger.info(

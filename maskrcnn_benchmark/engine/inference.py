@@ -32,7 +32,12 @@ def compute_on_dataset(model, data_loader, device, bbox_aug, timer=None):
                     torch.cuda.synchronize()
                 timer.toc()
             output = [o.to(cpu_device) for o in output]
-        results_dict.update(
+        if not isinstance(whole_depth, torch.Tensor):
+            results_dict.update(
+                {img_id: [result, 0] for img_id, result in zip(image_ids, output)}
+            )
+        else:
+            results_dict.update(
             {img_id: [result, whole_depth] for img_id, result, whole_depth in zip(image_ids, output, whole_depth)}
         )
     return results_dict

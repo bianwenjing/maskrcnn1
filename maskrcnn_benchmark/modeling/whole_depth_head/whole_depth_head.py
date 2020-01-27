@@ -209,6 +209,11 @@ class DORN(torch.nn.Module):
         self.orl = OrdinalRegressionLayer()
         self.loss_evaluator = make_whole_depth_loss_evaluator()
 
+        #####################################################
+        # for name, param in self.named_parameters():
+        #     param.requires_grad = False
+        #####################################################
+
     def forward(self, features, targets = None):
         x = self.aspp_module(features)
         depth_labels, ord_labels = self.orl(x)

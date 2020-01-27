@@ -24,7 +24,6 @@ class DEPTHeval(COCOeval):
         self.ious = {}                      # ious between all gts and dts
         ###################################################################
         self.depth_error = {}
-        self.iou_type = iouType
         ####################################################################
         if not cocoGt is None:
             self.params.imgIds = sorted(cocoGt.getImgIds())
@@ -64,18 +63,16 @@ class DEPTHeval(COCOeval):
         self._gts = defaultdict(list)  # gt for evaluation
         self._dts = defaultdict(list)  # dt for evaluation
 
-        if self.iou_type == 'whole_depth':
-            pass
-        else:
-            for gt in gts:
-                self._gts[gt['image_id'], gt['category_id']].append(gt)
-                # print('££££££££££££££££££', gt['image_id'], gt['category_id'])
-            for dt in dts:
-                self._dts[dt['image_id'], dt['category_id']].append(dt)
-              # number of ground truth items (anno id+1)
-            # len(self._dts): 111, number of detected items
-            self.evalImgs = defaultdict(list)  # per-image per-category evaluation results
-            self.eval = {}  # accumulated evaluation results
+
+        for gt in gts:
+            self._gts[gt['image_id'], gt['category_id']].append(gt)
+            # print('££££££££££££££££££', gt['image_id'], gt['category_id'])
+        for dt in dts:
+            self._dts[dt['image_id'], dt['category_id']].append(dt)
+          # number of ground truth items (anno id+1)
+        # len(self._dts): 111, number of detected items
+        self.evalImgs = defaultdict(list)  # per-image per-category evaluation results
+        self.eval = {}  # accumulated evaluation results
 
     def evaluate(self):
         '''
@@ -128,20 +125,23 @@ class DEPTHeval(COCOeval):
             computeIoU = self.compute_depth_metrics
         elif p.iouType == 'keypoints':
             computeIoU = self.computeOks
+        if p.iouType == 'whole_depth':
+            computeIoU = self.compute_whole_depth_metrics
+
 
         self.ious = {(imgId, catId): computeIoU(imgId, catId) \
                     for imgId in p.imgIds
                     for catId in catIds}
-        if p.iouType == 'depth':
+        if p.iouType == 'depth' or p.iouType == 'whole_depth':
             error = []
             for imgId in p.imgIds:
                 for catId in catIds:
-                    x=computeIoU(imgId, catId)
-                    if x!=[]:
+                    x = computeIoU(imgId, catId)
+                    if x != []:
                         error.append(x)
             error = np.asarray(error)
             self.mean_error = np.mean(error, axis=0)
-            print('##################', self.mean_error)
+            # print('##################', self.mean_error)
         else:
             evaluateImg = self.evaluateImg
             maxDet = p.maxDets[-1]
@@ -154,6 +154,59 @@ class DEPTHeval(COCOeval):
 
         toc = time.time()
         print('DONE (t={:0.2f}s).'.format(toc - tic))
+    def compute_whole_depth_metrics(self, imgId, catId):
+        p = self.params
+        if p.useCats:
+            gt = self._gts[imgId, catId]
+            dt = self._dts[imgId, catId]
+        else:
+            gt = [_ for cId in p.catIds for _ in self._gts[imgId, cId]]
+            dt = [_ for cId in p.catIds for _ in self._dts[imgId, cId]]
+
+        if len(gt) == 0 or len(dt) == 0:
+            return []
+        # inds = np.argsort([-d['score'] for d in dt], kind='mergesort')
+        # dt = [dt[i] for i in inds]
+        # if len(dt) > p.maxDets[-1]:
+        #     dt = dt[0:p.maxDets[-1]]
+
+        g = [g['depth'] for g in gt]
+        d = [d['whole_depth'] for d in dt]
+
+
+        depth_d = Image.open(d[0])
+        width, height = depth_d.size
+        depth_d = np.array(depth_d)
+        depth_g = Image.open('/home/wenjing/storage/ScanNetv2/' + g[0]).resize((width, height))
+        depth_g = np.array(depth_g)
+
+        # remove zeros to avoid divide by zero
+        mask1 = depth_d != 0
+        mask2 = depth_g != 0
+        mask = mask1*mask2
+        depth_g = depth_g[mask]
+        depth_d = depth_d[mask]
+
+        thresh = np.maximum((depth_g / depth_d), (depth_d / depth_g))
+        a1 = (thresh < 1.25).mean()
+        a2 = (thresh < 1.25 ** 2).mean()
+        a3 = (thresh < 1.25 ** 3).mean()
+
+        rmse = (depth_d - depth_g) ** 2
+        rmse = np.sqrt(rmse.mean())
+
+        # print('£££££££££££££££££££££', np.unique(depth_d))
+        rmse_log = (np.log(depth_g) - np.log(depth_d)) ** 2
+        rmse_log = np.sqrt(rmse_log.mean())
+
+        abs_rel = np.mean(np.abs(depth_d - depth_g) / depth_g)
+        sq_rel = np.mean(((depth_g - depth_d) ** 2) / depth_g)
+
+
+        log10_error = np.abs(np.log10(depth_g) - np.log10(depth_d))
+        log10_mean = np.mean(log10_error)
+        metrics = [abs_rel, sq_rel, rmse, rmse_log, log10_mean, a1, a2, a3]
+        return metrics
 
     def compute_depth_metrics(self, imgId, catId):
         p = self.params
@@ -168,8 +221,8 @@ class DEPTHeval(COCOeval):
             return []
         inds = np.argsort([-d['score'] for d in dt], kind='mergesort')
         dt = [dt[i] for i in inds]
-        if len(dt) > p.maxDets[-1]:
-            dt = dt[0:p.maxDets[-1]]
+        # if len(dt) > p.maxDets[-1]:
+        #     dt = dt[0:p.maxDets[-1]]
 
         if p.iouType == 'depth':
             g = [g['depth'] for g in gt]
@@ -203,6 +256,7 @@ class DEPTHeval(COCOeval):
         rmse = np.sqrt(rmse.mean())
         # print('@@@@@@@@@@@@@@@@@@', rmse)
 
+        # print('""""""""""""""""""', np.unique(depth_d))
         rmse_log = (np.log(depth_g) - np.log(depth_d))**2
         rmse_log = np.sqrt(rmse_log.mean())
 
@@ -336,14 +390,14 @@ class DEPTHeval(COCOeval):
                 stats[i] = self.mean_error[i]
             return stats
 
-        if not self.eval and self.params.iouType != 'depth':
+        if not self.eval and self.params.iouType != 'depth' and self.params.iouType != 'whole_depth':
             raise Exception('Please run accumulate() first')
         iouType = self.params.iouType
         if iouType == 'segm' or iouType == 'bbox':
             summarize = _summarizeDets
         elif iouType == 'keypoints':
             summarize = _summarizeKps
-        elif iouType == 'depth':
+        elif iouType == 'depth' or iouType == 'whole_depth':
             summarize = _summarize_Depth
         self.stats = summarize()
 
@@ -368,11 +422,14 @@ class Params:
 
     def set_whole_depth_params(self):
         self.imgIds = []
+        self.catIds = []
+        self.useCats = 1
+        self.maxDets = [1, 10, 100]
 
     def setDepthParams(self):
         self.imgIds = []
         self.catIds = []
-        # self.maxDets = [1, 10, 100]
+        self.maxDets = [1, 10, 100]
         self.useCats = 1
         # self.areaRng = [[0 ** 2, 1e5 ** 2], [0 ** 2, 32 ** 2], [32 ** 2, 96 ** 2], [96 ** 2, 1e5 ** 2]]
         # self.areaRngLbl = ['all', 'small', 'medium', 'large']

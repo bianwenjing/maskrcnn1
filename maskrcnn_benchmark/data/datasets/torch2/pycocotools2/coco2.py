@@ -38,6 +38,10 @@ class COCO2(COCO):
             res.dataset['images'] = [img for img in res.dataset['images'] if img['id'] in imgIds]
             for id, ann in enumerate(anns):
                 ann['id'] = id + 1
+        elif 'whole_depth' in anns[0]:
+            for id, ann in enumerate(anns):
+                ann['id'] = id + 1
+                ann['iscrowd'] = 0
         elif 'depth' in anns[0]:
             res.dataset['categories'] = copy.deepcopy(self.dataset['categories'])
             for id, ann in enumerate(anns):

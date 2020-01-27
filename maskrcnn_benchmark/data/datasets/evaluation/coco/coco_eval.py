@@ -71,14 +71,16 @@ def do_coco_evaluation(
     if 'keypoints' in iou_types:
         logger.info('Preparing keypoints results')
         coco_results['keypoints'] = prepare_for_coco_keypoint(predictions, dataset)
+    if "whole_depth" in iou_types:
+        logger.info('Preparing whole depth result')
+        coco_results["whole_depth"] = prepare_for_whole_depth(predictions, dataset)
     if "depth" in iou_types:
         # predictions: list of BoxList
         # dataset: ScanNetDataset
         logger.info('Preparing depth results')
         coco_results["depth"] = prepare_for_depth(predictions, dataset)
-    if "whole_depth" in iou_types:
-        logger.info('Preparing whole depth result')
-        coco_results["whole_depth"] = prepare_for_whole_depth(predictions, dataset)
+
+
     results = COCOResults(*iou_types)
     logger.info("Evaluating predictions")
     for iou_type in iou_types:
@@ -86,10 +88,10 @@ def do_coco_evaluation(
             file_path = f.name
             if output_folder:
                 file_path = os.path.join(output_folder, iou_type + ".json")
-            if iou_type == 'depth':
+            if iou_type == 'whole_depth':
+                res = evaluate_whole_depth_prediction(dataset.coco, coco_results[iou_type], file_path, iou_type)
+            elif iou_type == 'depth':
                 res = evaluate_depth_predictions(dataset.coco, coco_results[iou_type], file_path, iou_type)
-            elif iou_types == 'whole_depth':
-                res = evaluate_whole_depth_prediction(dataset.coco, coco_results[iou_types], file_path, iou_type)
             else:
                 res = evaluate_predictions_on_coco(
                     dataset.coco, coco_results[iou_type], file_path, iou_type
@@ -226,7 +228,8 @@ def prepare_for_depth(predictions, dataset):
             dd = output_dir + "_" + str(i) + ".png"
             # dd = output_dir + "_" + str(i) + ".tiff"
             mkdir(cfg.OUTPUT_DIR + '/depth')
-            Image.fromarray(np.array(depths[i][0])).save(dd)
+            depths = np.array(depths)
+            Image.fromarray(depths[i][0]).save(dd)
             dep_dir.append(dd)
         # print('@@@@@@@@@@@@@@',dep_dir)
         # logger.info('Time mask: {}'.format(time.time() - t))
@@ -291,13 +294,15 @@ def prepare_for_whole_depth(predictions, dataset):
         output_dir = cfg.OUTPUT_DIR + '/whole_depth/' + str(image_id) + ".png"
         # dd = output_dir + "_" + str(i) + ".tiff"
         mkdir(cfg.OUTPUT_DIR + '/whole_depth')
-        Image.fromarray(np.array(prediction).save(output_dir))
+        prediction = np.array(prediction.cpu().to(torch.int32))   #float -> int32, in order to save as image
+        Image.fromarray(prediction).save(output_dir)
 
         coco_results.extend(
             [
                 {
                     "image_id": original_id,
                     "whole_depth": output_dir,
+                    "category_id": 1
                 }
             ]
         )
@@ -486,12 +491,15 @@ def evaluate_depth_predictions(
 def evaluate_whole_depth_prediction(
         coco_gt, coco_results, json_result_file, iou_type
 ):
+    print('££££££££££££££££££££', json_result_file)
     with open(json_result_file, "w") as f:
         json.dump(coco_results, f)
     print('************json file finished**************')
     coco_dt = coco_gt.loadRes(str(json_result_file)) if coco_results else COCO2()
     coco_eval = DEPTHeval(coco_gt, coco_dt, iou_type)
     coco_eval.evaluate()
+    coco_eval.summarize()
+    return coco_eval
 
 #############################################################################
 class COCOResults(object):
@@ -509,12 +517,12 @@ class COCOResults(object):
             "ARl@1000",
         ],
         "keypoints": ["AP", "AP50", "AP75", "APm", "APl"],
-        # "depth": ["AP", "AP50", "AP75", "APm", "APl"],
-        "depth": ["abs_rel", "sq_rel", "rmse", "rmse_log", "log10_mean", "a1", "a2", "a3"]
+        "depth": ["abs_rel", "sq_rel", "rmse", "rmse_log", "log10_mean", "a1", "a2", "a3"],
+        "whole_depth": ["abs_rel", "sq_rel", "rmse", "rmse_log", "log10_mean", "a1", "a2", "a3"]
     }
 
     def __init__(self, *iou_types):
-        allowed_types = ("box_proposal", "bbox", "segm", "keypoints", "depth")
+        allowed_types = ("box_proposal", "bbox", "segm", "keypoints", "depth", "whole_depth")
         assert all(iou_type in allowed_types for iou_type in iou_types)
         results = OrderedDict()
         for iou_type in iou_types:
