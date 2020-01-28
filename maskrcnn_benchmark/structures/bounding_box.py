@@ -222,6 +222,8 @@ class BoxList(object):
         if remove_empty:
             box = self.bbox
             keep = (box[:, 3] > box[:, 1]) & (box[:, 2] > box[:, 0])
+            # print('££££££££££', box[:,0], box[:,1], box[:,2], box[:,3])
+            # print(keep)
             return self[keep]
         return self
 

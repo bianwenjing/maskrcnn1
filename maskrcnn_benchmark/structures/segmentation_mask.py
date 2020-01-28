@@ -370,7 +370,7 @@ class PolygonList(object):
             size: absolute image size
 
         """
-        # print('$$$$$$$$$$$$$$$$', polygons)
+        # print('$$$$$$$$$$$$$$$$', len(polygons) )
         if isinstance(polygons, (list, tuple)):
             if len(polygons) == 0:
                 polygons = [[[]]]
@@ -400,7 +400,9 @@ class PolygonList(object):
             p = PolygonInstance(p, size)
             if len(p) > 0:
                 self.polygons.append(p)
-
+            else:
+                print(p)
+        # print('*********************', len(self.polygons))
         self.size = tuple(size)
 
     def transpose(self, method):
@@ -464,7 +466,7 @@ class PolygonList(object):
                 item = item.nonzero()
                 item = item.squeeze(1) if item.numel() > 0 else item
                 item = item.tolist()
-            # print('££££££££££££££££££££££££', len(self.polygons), len(item), len(selected_polygons))
+            # print('££££££££££££££££££££££££', len(item), len(self.polygons))
             for i in item:
                 # print(i)
                 selected_polygons.append(self.polygons[i])

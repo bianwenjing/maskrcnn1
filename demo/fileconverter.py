@@ -76,7 +76,7 @@ def convert(img_path, json_file, mode, aa, bb):
 
             bbox = {}
             segment = {}
-            class_20=np.array([1, 2, 3, 4, 5, 7, 8, 9, 11, 13, 14, 15, 16, 17, 18, 21, 27, 35, 55], dtype=np.int)
+            # class_20=np.array([1, 2, 3, 4, 5, 7, 8, 9, 11, 13, 14, 15, 16, 17, 18, 21, 27, 35, 55], dtype=np.int)
             classes_full = np.unique(label)
             if classes_full[0] == 0:
                 classes_full = np.delete(classes_full, 0)
@@ -96,12 +96,12 @@ def convert(img_path, json_file, mode, aa, bb):
                             maxlen = len(contour[i])
                     d = contour[maxlen_ind]
                     d = np.squeeze(d)
-                    if len(d.shape) == 2:
+                    if len(d.shape) == 2 and d.shape[0]>=3:
                         a = np.min(d, axis=0)
                         b = np.amax(d, axis=0)
                         w = b[0] - a[0]
                         h = b[1] - a[1]
-                        if w>0 and h>0:
+                        if w > 0 and h > 0:
                             bbox[cl] = [a[0].item(), a[1].item(), w.item(), h.item()]
                             d = np.reshape(d, (1, -1))
                             d = d.tolist()
@@ -124,12 +124,12 @@ def convert(img_path, json_file, mode, aa, bb):
     tsvfile.close()
 
 if __name__ == '__main__':
-    img_path = '/home/wenjing/storage/ScanNetv2/train.txt'
-    json_file = '/home/wenjing/storage/anno/train_full_class.txt'
-    convert(img_path, json_file, mode = 'train', aa = 118, bb = 50)
+    img_path = '/home/wenjing/storage/ScanNetv2/train173.txt'
+    json_file = '/home/wenjing/storage/anno/train_full_class_173.txt'
+    convert(img_path, json_file, mode = 'train', aa = 173, bb = 30)
     # a in range 1,119
     img_path = '/home/wenjing/storage/ScanNetv2/val.txt'
-    json_file = '/home/wenjing/storage/anno/val_full_class.txt'
+    json_file = '/home/wenjing/storage/anno/val_full_class_173.txt'
     convert(img_path, json_file, mode='val', aa=10, bb= 1000)
 
     # b in range 1, 45
