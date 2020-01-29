@@ -50,37 +50,37 @@ for ii in range(10):
         predictions = coco_demo.run_on_opencv_image(image)
         writer.add_image(str(ii), predictions, 0, dataformats='HWC')
 
-        depth_pred = coco_demo.run_on_opencv_image(image, depth=True)
-        depth_pred = depth_pred[0]
-        depth_pred[depth_pred < 0] = 0
-        depth_pred = np.uint32(depth_pred)
-        # np.save('/home/wenjing/dep.npy', depth_pred)
-        # predictions = torch.from_numpy(predictions)
-        # depth_pred = depth_pred[:, :, [1, 2, 0]]
-        # depth_pred[depth_pred<0] = 0
-        # depth_pred = np.uint8(depth_pred)
-        # print(np.unique(depth_pred))
-        # depth_pred = Image.fromarray(depth_pred)
-        # depth_pred.save("/home/wenjing/image.png", "PNG")
-
-        depth_target = Image.open('/home/wenjing/storage/ScanNetv2/test_depth/' + aline[:12] + '/depth/' + str(jj) + '.png')
-        depth_target = depth_target.resize((1296, 968))
-        depth_target = np.array(depth_target)
-        d_min = min(np.min(depth_pred), np.min(depth_target))
-        d_max = max(np.max(depth_pred), np.max(depth_target))
-        depth_target_scaled = colored_depthmap(depth_target, d_min, d_max)
-        depth_pred_scaled = colored_depthmap(depth_pred, d_min, d_max)
-        save_path_pred = '/home/wenjing/test1/' + str(ii) + '_pred.png'
-        plt.imsave(save_path_pred, depth_pred_scaled)
-        depth_pred_scaled = Image.open(save_path_pred)
-        depth_pred_scaled = np.array(depth_pred_scaled)
-
-        save_path_target = '/home/wenjing/test1/' + str(ii) + '_target.png'
-        plt.imsave(save_path_target, depth_target_scaled)
-        depth_target_scaled = Image.open(save_path_target)
-        depth_target_scaled = np.array(depth_target_scaled)
-        writer.add_image(str(ii) + '_depth', depth_pred_scaled, 0, dataformats='HWC')
-        writer.add_image(str(ii)+'depth_ground', depth_target_scaled, 0, dataformats = 'HWC')
+        # depth_pred = coco_demo.run_on_opencv_image(image, depth=True)
+        # depth_pred = depth_pred[0]
+        # depth_pred[depth_pred < 0] = 0
+        # depth_pred = np.uint32(depth_pred)
+        # # np.save('/home/wenjing/dep.npy', depth_pred)
+        # # predictions = torch.from_numpy(predictions)
+        # # depth_pred = depth_pred[:, :, [1, 2, 0]]
+        # # depth_pred[depth_pred<0] = 0
+        # # depth_pred = np.uint8(depth_pred)
+        # # print(np.unique(depth_pred))
+        # # depth_pred = Image.fromarray(depth_pred)
+        # # depth_pred.save("/home/wenjing/image.png", "PNG")
+        #
+        # depth_target = Image.open('/home/wenjing/storage/ScanNetv2/test_depth/' + aline[:12] + '/depth/' + str(jj) + '.png')
+        # depth_target = depth_target.resize((1296, 968))
+        # depth_target = np.array(depth_target)
+        # d_min = min(np.min(depth_pred), np.min(depth_target))
+        # d_max = max(np.max(depth_pred), np.max(depth_target))
+        # depth_target_scaled = colored_depthmap(depth_target, d_min, d_max)
+        # depth_pred_scaled = colored_depthmap(depth_pred, d_min, d_max)
+        # save_path_pred = '/home/wenjing/test1/' + str(ii) + '_pred.png'
+        # plt.imsave(save_path_pred, depth_pred_scaled)
+        # depth_pred_scaled = Image.open(save_path_pred)
+        # depth_pred_scaled = np.array(depth_pred_scaled)
+        #
+        # save_path_target = '/home/wenjing/test1/' + str(ii) + '_target.png'
+        # plt.imsave(save_path_target, depth_target_scaled)
+        # depth_target_scaled = Image.open(save_path_target)
+        # depth_target_scaled = np.array(depth_target_scaled)
+        # writer.add_image(str(ii) + '_depth', depth_pred_scaled, 0, dataformats='HWC')
+        # writer.add_image(str(ii)+'depth_ground', depth_target_scaled, 0, dataformats = 'HWC')
 writer.close()
 f.close()
 

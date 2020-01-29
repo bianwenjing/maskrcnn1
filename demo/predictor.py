@@ -11,6 +11,7 @@ from maskrcnn_benchmark.modeling.roi_heads.depth_head.inference import Masker as
 from maskrcnn_benchmark import layers as L
 from maskrcnn_benchmark.utils import cv2_util
 import numpy as np
+import csv
 
 class Resize(object):
     def __init__(self, min_size, max_size):
@@ -46,113 +47,35 @@ class Resize(object):
         return image
 class COCODemo(object):
     # COCO categories for pretty print
-    CATEGORIES = [
-        "__background",
-        "wall",
-        "chair",
-        "floor",
-        "table",
-        "door",
-        "cabinet",
-        "shelf",
-        "desk",
-        "bed",
-        "toilet",
-        "curtain",
-        "refrigerator",
-        "sofa",
-        "sink",
-        "shower curtain",
-        "window",
-        "picture",
-        "bookshelf",
-        "counter",
-
-
-    ]
     # CATEGORIES = [
     #     "__background",
-    #     "person",
-    #     "bicycle",
-    #     "car",
-    #     "motorcycle",
-    #     "airplane",
-    #     "bus",
-    #     "train",
-    #     "truck",
-    #     "boat",
-    #     "traffic light",
-    #     "fire hydrant",
-    #     "stop sign",
-    #     "parking meter",
-    #     "bench",
-    #     "bird",
-    #     "cat",
-    #     "dog",
-    #     "horse",
-    #     "sheep",
-    #     "cow",
-    #     "elephant",
-    #     "bear",
-    #     "zebra",
-    #     "giraffe",
-    #     "backpack",
-    #     "umbrella",
-    #     "handbag",
-    #     "tie",
-    #     "suitcase",
-    #     "frisbee",
-    #     "skis",
-    #     "snowboard",
-    #     "sports ball",
-    #     "kite",
-    #     "baseball bat",
-    #     "baseball glove",
-    #     "skateboard",
-    #     "surfboard",
-    #     "tennis racket",
-    #     "bottle",
-    #     "wine glass",
-    #     "cup",
-    #     "fork",
-    #     "knife",
-    #     "spoon",
-    #     "bowl",
-    #     "banana",
-    #     "apple",
-    #     "sandwich",
-    #     "orange",
-    #     "broccoli",
-    #     "carrot",
-    #     "hot dog",
-    #     "pizza",
-    #     "donut",
-    #     "cake",
+    #     "wall",
     #     "chair",
-    #     "couch",
-    #     "potted plant",
+    #     "floor",
+    #     "table",
+    #     "door",
+    #     "cabinet",
+    #     "shelf",
+    #     "desk",
     #     "bed",
-    #     "dining table",
     #     "toilet",
-    #     "tv",
-    #     "laptop",
-    #     "mouse",
-    #     "remote",
-    #     "keyboard",
-    #     "cell phone",
-    #     "microwave",
-    #     "oven",
-    #     "toaster",
-    #     "sink",
+    #     "curtain",
     #     "refrigerator",
-    #     "book",
-    #     "clock",
-    #     "vase",
-    #     "scissors",
-    #     "teddy bear",
-    #     "hair drier",
-    #     "toothbrush",
+    #     "sofa",
+    #     "sink",
+    #     "shower curtain",
+    #     "window",
+    #     "picture",
+    #     "bookshelf",
+    #     "counter",
+    #
+    #
     # ]
+    CATEGORIES = []
+    with open("/home/wenjing/scannetv2-labels.combined.tsv") as tsvfile:
+        tsvreader = csv.reader(tsvfile, delimiter="\t")
+        for line in tsvreader:
+            CATEGORIES.append(line[2])
 
     def __init__(
         self,
@@ -275,7 +198,7 @@ class COCODemo(object):
         image_list = image_list.to(self.device)
         # compute predictions
         with torch.no_grad():
-            predictions = self.model(image_list)
+            predictions, whole_depth = self.model(image_list)
         predictions = [o.to(self.cpu_device) for o in predictions]
 
         # always single image is passed at a time
@@ -504,6 +427,7 @@ class COCODemo(object):
         """
         scores = predictions.get_field("scores").tolist()
         labels = predictions.get_field("labels").tolist()
+
         labels = [self.CATEGORIES[i] for i in labels]
         boxes = predictions.bbox
 
