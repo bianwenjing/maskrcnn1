@@ -102,7 +102,7 @@ def do_train(
         # writer.add_scalar('depth loss', loss_dict['loss_depth'], iteration)
         writer.add_scalar('objectness loss', loss_dict['loss_objectness'], iteration)
         writer.add_scalar('rpn box reg loss', loss_dict['loss_rpn_box_reg'], iteration)
-
+        writer.add_scalar('lr', optimizer.param_groups[0]["lr"], iteration)
 
         # reduce losses over all GPUs for logging purposes
         loss_dict_reduced = reduce_loss_dict(loss_dict)

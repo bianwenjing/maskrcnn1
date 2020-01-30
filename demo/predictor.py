@@ -146,6 +146,12 @@ class COCODemo(object):
             ]
         )
         return transform
+    def run_on_ground_truth(self, image, ground_truth):
+        result = image.copy()
+        if self.cfg.MODEL.MASK_ON:
+            result = self.overlay_mask(result, ground_truth)
+        result = self.overlay_class_names(result, ground_truth)
+        return result
 
     def run_on_opencv_image(self, image, depth=False):
         """

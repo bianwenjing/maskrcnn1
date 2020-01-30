@@ -12,6 +12,7 @@ from predictor import COCODemo
 from torch.utils.tensorboard import SummaryWriter
 import os
 import torch
+from maskrcnn_benchmark.data.datasets.mydataset import ScanNetDataset
 
 # this makes our figures bigger
 pylab.rcParams['figure.figsize'] = 20, 12
@@ -38,6 +39,9 @@ def colored_depthmap(depth, d_min=None, d_max=None):
 #     return 255 * cmap(depth_relative)[:, :, :3]  # H, W, C
     return 255*depth_relative
 
+anno = '/home/wenjing/storage/anno/ground.txt'
+root = '/home/wenjing/storage/ScanNetv2/test'
+a = ScanNetDataset(anno, root, True)
 writer = SummaryWriter()
 f = open('/home/wenjing/storage/ScanNetv2/test.txt', "r")
 for ii in range(10):
@@ -49,6 +53,9 @@ for ii in range(10):
         print('@@@@@@@@@@@@@@@@@', aline[:12])
         predictions = coco_demo.run_on_opencv_image(image)
         writer.add_image(str(ii), predictions, 0, dataformats='HWC')
+        img, target, idx = a[ii]
+        print('£££££££££££', target)
+        ground_truth = coco_demo.run_on_ground_truth(image, target)
 
         # depth_pred = coco_demo.run_on_opencv_image(image, depth=True)
         # depth_pred = depth_pred[0]

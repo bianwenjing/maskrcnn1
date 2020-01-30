@@ -64,15 +64,15 @@ def convert(img_path, json_file, mode, aa, bb):
                 {"file_name":  aline[:12] + '/color/' + str(jj) + ".jpg", "height": 968, "width": 1296,
                  "id": img_id})
 
-            intrinsic = []
-            intr_path = '/home/wenjing/storage/ScanNetv2/' + mode + '_intrinsics/' + aline[:12] +'/intrinsic/intrinsic_depth.txt'
-            intr_file = open(intr_path, "r")
-            matrix =intr_file.readlines()
-            f1 = matrix[0].split()[0]
-            intrinsic.append(float(f1))
-            f2 = matrix[1].split()[1]
-            intrinsic.append(float(f2))
-            intr_file.close()
+            # intrinsic = []
+            # intr_path = '/home/wenjing/storage/ScanNetv2/' + mode + '_intrinsics/' + aline[:12] +'/intrinsic/intrinsic_depth.txt'
+            # intr_file = open(intr_path, "r")
+            # matrix =intr_file.readlines()
+            # f1 = matrix[0].split()[0]
+            # intrinsic.append(float(f1))
+            # f2 = matrix[1].split()[1]
+            # intrinsic.append(float(f2))
+            # intr_file.close()
 
             bbox = {}
             segment = {}
@@ -107,12 +107,14 @@ def convert(img_path, json_file, mode, aa, bb):
                             d = d.tolist()
                             segment[cl] = d
 
-                            Js['annotations'].append(
-                                {'intrinsic': intrinsic, 'segmentation': segment[cl], 'area': area, 'iscrowd': 0, 'image_id': img_id,
-                                 'bbox': bbox[cl], 'category_id': cl.item(), 'id': anno_id, 'depth': mode + '_depth/' + aline[:12]+ '/depth/' + str(jj) + '.png'})
                             # Js['annotations'].append(
-                            #     {'segmentation': segment[cl], 'area': area, 'iscrowd': 0, 'image_id': img_id,
-                            #      'bbox': bbox[cl], 'category_id': cl.item(), 'id': anno_id, 'depth': segment[cl]})
+                            #     {'intrinsic': intrinsic, 'segmentation': segment[cl], 'area': area, 'iscrowd': 0, 'image_id': img_id,
+                            #      'bbox': bbox[cl], 'category_id': cl.item(), 'id': anno_id, 'depth': mode + '_depth/' + aline[:12]+ '/depth/' + str(jj) + '.png'})
+                            Js['annotations'].append(
+                                {'segmentation': segment[cl], 'area': area, 'iscrowd': 0,
+                                 'image_id': img_id,
+                                 'bbox': bbox[cl], 'category_id': cl.item(), 'id': anno_id,
+                                 'depth': mode + '_depth/' + aline[:12] + '/depth/' + str(jj) + '.png'})
                             anno_id += 1
             img_id += 1
     print(mode, "data number :", img_id)
@@ -124,12 +126,12 @@ def convert(img_path, json_file, mode, aa, bb):
     tsvfile.close()
 
 if __name__ == '__main__':
-    img_path = '/home/wenjing/storage/ScanNetv2/train173.txt'
-    json_file = '/home/wenjing/storage/anno/train_full_class_173.txt'
-    convert(img_path, json_file, mode = 'train', aa = 173, bb = 30)
+    img_path = '/home/wenjing/storage/ScanNetv2/test.txt'
+    json_file = '/home/wenjing/storage/anno/ground.txt'
+    convert(img_path, json_file, mode = 'test', aa = 10, bb = 300000)
     # a in range 1,119
     img_path = '/home/wenjing/storage/ScanNetv2/val.txt'
     json_file = '/home/wenjing/storage/anno/val_full_class_173.txt'
-    convert(img_path, json_file, mode='val', aa=10, bb= 1000)
+    # convert(img_path, json_file, mode='val', aa=10, bb= 1000)
 
     # b in range 1, 45
