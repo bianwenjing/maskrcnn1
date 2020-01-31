@@ -53,10 +53,14 @@ for ii in range(10):
         print('@@@@@@@@@@@@@@@@@', aline[:12])
         predictions = coco_demo.run_on_opencv_image(image)
         writer.add_image(str(ii), predictions, 0, dataformats='HWC')
+        ################################################################################################
         img, target, idx = a[ii]
-        print('£££££££££££', target)
+        target_tensor = target.get_field('masks').get_mask_tensor()
+        target_tensor = target_tensor[:, None, :, :]
+        target.add_field('mask', target_tensor)
         ground_truth = coco_demo.run_on_ground_truth(image, target)
-
+        writer.add_image(str(ii) + 'ground_truth', ground_truth, 0, dataformats='HWC')
+        ##########################################################################################################
         # depth_pred = coco_demo.run_on_opencv_image(image, depth=True)
         # depth_pred = depth_pred[0]
         # depth_pred[depth_pred < 0] = 0

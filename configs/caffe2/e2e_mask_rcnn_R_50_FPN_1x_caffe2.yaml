@@ -2,7 +2,7 @@ MODEL:
   META_ARCHITECTURE: "GeneralizedRCNN"
 #  WEIGHT: "/home/wenjing/result3/model_final.pth"
 #  WEIGHT: "/home/wenjing/result_/0720000_result6.pth"
-  WEIGHT: "/home/wenjing/storage/result/result11/model_0095000.pth"
+  WEIGHT: "/home/wenjing/storage/result/result11/model_0355000.pth"
   BACKBONE:
     CONV_BODY: "R-50-FPN"
   RESNETS:
