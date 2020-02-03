@@ -10,7 +10,8 @@ from maskrcnn_benchmark.modeling.balanced_positive_negative_sampler import (
     BalancedPositiveNegativeSampler
 )
 from maskrcnn_benchmark.modeling.utils import cat
-
+import torch.nn as nn
+from torch.autograd import Variable
 
 class FastRCNNLossComputation(object):
     """
@@ -147,6 +148,10 @@ class FastRCNNLossComputation(object):
         )
 
         classification_loss = F.cross_entropy(class_logits, labels)
+        #############################################################################
+        # focal_loss = FocalLoss(gamma=2, eps=0)
+        # classification_loss = focal_loss(class_logits, labels)
+        ###############################################################################
 
         # get indices that correspond to the regression targets for
         # the corresponding ground truth labels, to be used with
@@ -169,6 +174,38 @@ class FastRCNNLossComputation(object):
 
         return classification_loss, box_loss
 
+##############################################################################################################
+def one_hot(index, classes):
+    size = index.size() + (classes,)
+    view = index.size() + (1,)
+
+    mask = torch.Tensor(*size).fill_(0)
+    index = index.view(*view)
+    ones = 1.
+
+    if isinstance(index, Variable):
+        ones = Variable(torch.Tensor(index.size()).fill_(1))
+        mask = Variable(mask, volatile=index.volatile)
+
+    return mask.scatter_(1, index, ones)
+
+class FocalLoss(nn.Module):
+
+    def __init__(self, gamma=0, eps=1e-7):
+        super(FocalLoss, self).__init__()
+        self.gamma = gamma
+        self.eps = eps
+
+    def forward(self, input, target):
+        y = one_hot(target, input.size(-1))
+        logit = F.softmax(input, dim=-1)
+        logit = logit.clamp(self.eps, 1. - self.eps)
+
+        loss = -1 * y * torch.log(logit)  # cross entropy
+        loss = loss * (1 - logit) ** self.gamma  # focal loss
+
+        return loss.sum()
+################################################################################################################
 
 def make_roi_box_loss_evaluator(cfg):
     matcher = Matcher(

@@ -43,13 +43,13 @@ anno = '/home/wenjing/storage/anno/ground.txt'
 root = '/home/wenjing/storage/ScanNetv2/test'
 a = ScanNetDataset(anno, root, True)
 writer = SummaryWriter()
-f = open('/home/wenjing/storage/ScanNetv2/test.txt', "r")
+f = open('/home/wenjing/storage/ScanNetv2/val.txt', "r")
 for ii in range(10):
     aline = f.readline()
     for jj in range(0, 1, 100):
-        if not os.path.isfile('/home/wenjing/storage/ScanNetv2/test/' + aline[:12] + '/color/' + str(jj) + '.jpg'):
+        if not os.path.isfile('/home/wenjing/storage/ScanNetv2/val/' + aline[:12] + '/color/' + str(jj) + '.jpg'):
             break
-        image = cv2.imread('/home/wenjing/storage/ScanNetv2/test/' + aline[:12] + '/color/' + str(jj) + '.jpg')
+        image = cv2.imread('/home/wenjing/storage/ScanNetv2/val/' + aline[:12] + '/color/' + str(jj) + '.jpg')
         print('@@@@@@@@@@@@@@@@@', aline[:12])
         predictions = coco_demo.run_on_opencv_image(image)
         writer.add_image(str(ii), predictions, 0, dataformats='HWC')

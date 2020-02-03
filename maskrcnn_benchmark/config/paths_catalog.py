@@ -148,18 +148,18 @@ class DatasetCatalog(object):
             "mini": 10,
         },
         "ScanNet_train":{
-            "img_dir": "/home/wenjing/storage/ScanNetv2/train_full",
-            "ann_dir": "/home/wenjing/storage/anno/train_full_class_173.txt",
+            "img_dir": "/home/wenjing/storage/ScanNetv2/train_scan",
+            "ann_dir": "/home/wenjing/storage/anno/train_big.txt",
             # "ann_dir": "/home/wenjing/anno/train_focal.txt"
         },
         "ScanNet_val": {
-            "img_dir": "/home/wenjing/storage/ScanNetv2/val",
-            "ann_dir": "/home/wenjing/storage/anno/val_full_class_173.txt"
+            "img_dir": "/home/wenjing/storage/ScanNetv2/val_scan",
+            "ann_dir": "/home/wenjing/storage/anno/val_big.txt"
             # "ann_dir": "/home/wenjing/anno/val_focal.txt"
 
         },
         "ScanNet_test":{
-            "img_dir": "/home/wenjing/storage/ScanNetv2/test",
+            "img_dir": "/home/wenjing/storage/ScanNetv2/test_scan",
             "ann_dir": "/home/wenjing/anno/test_depth.txt"
         }
     }

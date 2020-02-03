@@ -8,32 +8,14 @@ import png
 import numpy as np
 import os
 import csv
+from pycocotools import mask as cocomask
+
 def convert(img_path, json_file, mode, aa, bb):
     print(mode)
     Js = {
         "images": [],
         "annotations": [],
-        "categories": [
-            # {"supercategory": "wall", "id": 1, "name": "wall"},
-            # {"supercategory": "chair", "id": 2, "name": "chair"},
-            # {"supercategory": "floor", "id": 3, "name": "floor"},
-            # {"supercategory": "table", "id": 4, "name": "table"},
-            # {"supercategory": "door", "id": 5, "name": "door"},
-            # {"supercategory": "cabinet", "id": 7, "name": "cabinet"},
-            # {"supercategory": "shelf", "id": 8, "name": "shelf"},
-            # {"supercategory": "desk", "id": 9, "name": "desk"},
-            # {"supercategory": "bed", "id": 11, "name": "bed"},
-            # {"supercategory": "toilet", "id": 17, "name": "toilet"},
-            # {"supercategory": "curtain", "id": 21, "name": "curtain"},
-            # {"supercategory": "refrigerator", "id": 27, "name": "refrigerator"},
-            # {"supercategory": "sofa", "id": 13, "name": "sofa"},
-            # {"supercategory": "sink", "id": 14, "name": "sink"},
-            # {"supercategory": "shower curtain", "id": 55, "name": "shower curtain"},
-            # {"supercategory": "window", "id": 16, "name": "window"},
-            # {"supercategory": "picture", "id": 15, "name": "picture"},
-            # {"supercategory": "bookshelf", "id": 18, "name": "bookshelf"},
-            # {"supercategory": "counter", "id": 35, "name": "counter"},
-        ]
+        "categories": []
     }
     with open("/home/wenjing/scannetv2-labels.combined.tsv") as tsvfile:
         tsvreader = csv.reader(tsvfile, delimiter="\t")
@@ -88,7 +70,39 @@ def convert(img_path, json_file, mode, aa, bb):
                     cl2 = np.array(cl)
                     binary = cv.compare(label, cl2, cmpop=cv.CMP_EQ)
                     area = np.count_nonzero(binary)
-                    _, contour, _ = cv.findContours(binary, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+                    _, contours, _ = cv.findContours(binary, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+                    #########################################################################################
+                    print('££££££££££', type(contours), type(contours[0]), cl)
+                    contour_sizes = []
+                    valid_contour_id = []
+                    for contour in contours:
+                        # i (num, 1, 2)
+                        contour_sizes.append(contour.size)
+                    max_contour = max(contour_sizes)
+                    for i, contour_size in enumerate(contour_sizes):
+                        ratio = contour_size/max_contour
+                        if ratio > 0.2 and contour_size > 6:
+                            valid_contour_id.append(i)
+                    if len(valid_contour_id) == 1:  # polygon
+                        d = contours[valid_contour_id[0]]
+                        d = np.squeeze(d)
+                        if len(d.shape) == 2:
+                            a = np.min(d, axis=0)
+                            b = np.amax(d, axis=0)
+                            w = b[0] - a[0]
+                            h = b[1] - a[1]
+                            if w > 0 and h > 0:
+                                bbox[cl] = [a[0].item(), a[1].item(), w.item(), h.item()]
+                                d = np.reshape(d, (1, -1))
+                                d = d.tolist()
+                                segment[cl] = d
+                    else: # RLE
+                        segmentation = []
+                        for i in valid_contour_id:
+
+                        RLEs = cocomask.frPyObjects()
+
+                    ############################################################################################
                     maxlen = 0
                     for i in range(len(contour)):
                         if len(contour[i]) > maxlen:
@@ -107,6 +121,7 @@ def convert(img_path, json_file, mode, aa, bb):
                             d = d.tolist()
                             segment[cl] = d
 
+                    ######################################################################################################
                             # Js['annotations'].append(
                             #     {'intrinsic': intrinsic, 'segmentation': segment[cl], 'area': area, 'iscrowd': 0, 'image_id': img_id,
                             #      'bbox': bbox[cl], 'category_id': cl.item(), 'id': anno_id, 'depth': mode + '_depth/' + aline[:12]+ '/depth/' + str(jj) + '.png'})
@@ -127,11 +142,11 @@ def convert(img_path, json_file, mode, aa, bb):
 
 if __name__ == '__main__':
     img_path = '/home/wenjing/storage/ScanNetv2/scannetv2_train.txt'
-    json_file = '/home/wenjing/storage/anno/train_big_real.txt'
-    convert(img_path, json_file, mode = 'train_scan', aa = 1201, bb = 30)
+    json_file = '/home/wenjing/storage/anno/train_big_crowd.txt'
+    convert(img_path, json_file, mode = 'train_scan', aa = 1, bb = 3000)
     # a in range 1,1201
     img_path = '/home/wenjing/storage/ScanNetv2/scannetv2_val.txt'
-    json_file = '/home/wenjing/storage/anno/val_big_real.txt'
-    convert(img_path, json_file, mode='val_scan', aa=312, bb= 30)
+    json_file = '/home/wenjing/storage/anno/val_big_crowd.txt'
+    # convert(img_path, json_file, mode='val_scan', aa=312, bb= 30)
 
     # b in range 1, 45
