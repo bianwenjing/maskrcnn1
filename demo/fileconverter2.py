@@ -56,8 +56,8 @@ def convert(img_path, json_file, mode, aa, bb):
             # intrinsic.append(float(f2))
             # intr_file.close()
 
-            bbox = {}
-            segment = {}
+            # bbox = {}
+            # segment = {}
             # class_20=np.array([1, 2, 3, 4, 5, 7, 8, 9, 11, 13, 14, 15, 16, 17, 18, 21, 27, 35, 55], dtype=np.int)
             classes_full = np.unique(label)
             if classes_full[0] == 0:
@@ -69,84 +69,109 @@ def convert(img_path, json_file, mode, aa, bb):
             for cl in class_label:
                     cl2 = np.array(cl)
                     binary = cv.compare(label, cl2, cmpop=cv.CMP_EQ)
-                    area = np.count_nonzero(binary)
+                    # area = np.count_nonzero(binary)
                     _, contours, _ = cv.findContours(binary, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
-                    #########################################################################################
-                    print('££££££££££', type(contours), type(contours[0]), cl)
-                    contour_sizes = []
-                    valid_contour_id = []
+                    ######################################################################################
+                    segmentation = []
                     for contour in contours:
-                        # i (num, 1, 2)
-                        contour_sizes.append(contour.size)
-                    max_contour = max(contour_sizes)
-                    for i, contour_size in enumerate(contour_sizes):
-                        ratio = contour_size/max_contour
-                        if ratio > 0.2 and contour_size > 6:
-                            valid_contour_id.append(i)
-                    if len(valid_contour_id) == 1:  # polygon
-                        d = contours[valid_contour_id[0]]
-                        d = np.squeeze(d)
-                        if len(d.shape) == 2:
-                            a = np.min(d, axis=0)
-                            b = np.amax(d, axis=0)
-                            w = b[0] - a[0]
-                            h = b[1] - a[1]
-                            if w > 0 and h > 0:
-                                bbox[cl] = [a[0].item(), a[1].item(), w.item(), h.item()]
-                                d = np.reshape(d, (1, -1))
-                                d = d.tolist()
-                                segment[cl] = d
-                    else: # RLE
-                        segmentation = []
-                        for i in valid_contour_id:
+                        if contour.size >= 6:
+                            segmentation.append(contour.flatten().tolist())
+                    if len(segmentation) > 0:
+                        RLEs = cocomask.frPyObjects(segmentation, label.shape[0], label.shape[1])
+                        RLE = cocomask.merge(RLEs)
+                        area = cocomask.area(RLE)
+                        [x, y, w, h] = cv.boundingRect(binary)
 
-                        RLEs = cocomask.frPyObjects()
+                        Js['annotations'].append(
+                            {
+                             'segmentation': segmentation,
+                             'area': area.item(),
+                             'iscrowd': 0,
+                             'image_id': img_id,
+                             'bbox': [x, y, w, h],
+                             'category_id': cl.item(),
+                             'id': anno_id,
+                             'depth': mode + '_depth/' + aline[:12] + '/depth/' + str(jj) + '.png'})
+                        anno_id += 1
+                    #########################################################################################
+                    # contour_sizes = []
+                    # valid_contour_id = []
+                    # for contour in contours:
+                    #     # i (num, 1, 2)
+                    #     contour_sizes.append(contour.size)
+                    # max_contour = max(contour_sizes)
+                    # for i, contour_size in enumerate(contour_sizes):
+                    #     ratio = contour_size/max_contour
+                    #     if ratio > 0.2 and contour_size > 6:
+                    #         valid_contour_id.append(i)
+                    # if len(valid_contour_id) == 1:  # polygon
+                    #     d = contours[valid_contour_id[0]]
+                    #     d = np.squeeze(d)
+                    #     if len(d.shape) == 2:
+                    #         a = np.min(d, axis=0)
+                    #         b = np.amax(d, axis=0)
+                    #         w = b[0] - a[0]
+                    #         h = b[1] - a[1]
+                    #         if w > 0 and h > 0:
+                    #             bbox[cl] = [a[0].item(), a[1].item(), w.item(), h.item()]
+                    #             d = np.reshape(d, (1, -1))
+                    #             d = d.tolist()
+                    #             segment[cl] = d
+                    # else: # RLE
+                    #     segmentation = []
+                    #     for i in valid_contour_id:
+                    #
+                    #     RLEs = cocomask.frPyObjects()
 
                     ############################################################################################
-                    maxlen = 0
-                    for i in range(len(contour)):
-                        if len(contour[i]) > maxlen:
-                            maxlen_ind = i
-                            maxlen = len(contour[i])
-                    d = contour[maxlen_ind]
-                    d = np.squeeze(d)
-                    if len(d.shape) == 2 and d.shape[0]>=3:
-                        a = np.min(d, axis=0)
-                        b = np.amax(d, axis=0)
-                        w = b[0] - a[0]
-                        h = b[1] - a[1]
-                        if w > 0 and h > 0:
-                            bbox[cl] = [a[0].item(), a[1].item(), w.item(), h.item()]
-                            d = np.reshape(d, (1, -1))
-                            d = d.tolist()
-                            segment[cl] = d
+                    # maxlen = 0
+                    # for i in range(len(contour)):
+                    #     if len(contour[i]) > maxlen:
+                    #         maxlen_ind = i
+                    #         maxlen = len(contour[i])
+                    # d = contour[maxlen_ind]
+                    # d = np.squeeze(d)
+                    # if len(d.shape) == 2 and d.shape[0]>=3:
+                    #     a = np.min(d, axis=0)
+                    #     b = np.amax(d, axis=0)
+                    #     w = b[0] - a[0]
+                    #     h = b[1] - a[1]
+                    #     if w > 0 and h > 0:
+                    #         bbox[cl] = [a[0].item(), a[1].item(), w.item(), h.item()]
+                    #         d = np.reshape(d, (1, -1))
+                    #         d = d.tolist()
+                    #         segment[cl] = d
 
                     ######################################################################################################
                             # Js['annotations'].append(
                             #     {'intrinsic': intrinsic, 'segmentation': segment[cl], 'area': area, 'iscrowd': 0, 'image_id': img_id,
                             #      'bbox': bbox[cl], 'category_id': cl.item(), 'id': anno_id, 'depth': mode + '_depth/' + aline[:12]+ '/depth/' + str(jj) + '.png'})
-                            Js['annotations'].append(
-                                {'segmentation': segment[cl], 'area': area, 'iscrowd': 0,
-                                 'image_id': img_id,
-                                 'bbox': bbox[cl], 'category_id': cl.item(), 'id': anno_id,
-                                 'depth': mode + '_depth/' + aline[:12] + '/depth/' + str(jj) + '.png'})
-                            anno_id += 1
+                            # Js['annotations'].append(
+                            #     {'segmentation': segment[cl], 'area': area, 'iscrowd': 0,
+                            #      'image_id': img_id,
+                            #      'bbox': bbox[cl], 'category_id': cl.item(), 'id': anno_id,
+                            #      'depth': mode + '_depth/' + aline[:12] + '/depth/' + str(jj) + '.png'})
+                            # anno_id += 1
             img_id += 1
     print(mode, "data number :", img_id)
-    json_fp = open(json_file, 'w')
-    json_str = json.dumps(Js, indent=4)
-    json_fp.write(json_str)
+    # json_fp = open(json_file, 'w')
+    # json_str = json.dumps(Js, indent=4)
+    # json_fp.write(json_str)
+    with open(json_file, 'w') as json_fp:
+        json.dump(Js, json_fp, indent=4)
     json_fp.close()
     f.close()
     tsvfile.close()
 
 if __name__ == '__main__':
     img_path = '/home/wenjing/storage/ScanNetv2/scannetv2_train.txt'
-    json_file = '/home/wenjing/storage/anno/train_big_crowd.txt'
-    convert(img_path, json_file, mode = 'train_scan', aa = 1, bb = 3000)
+    json_file = '/home/wenjing/storage/anno/train_git_many.txt'
+    convert(img_path, json_file, mode = 'train_scan', aa=1201, bb=30)
     # a in range 1,1201
     img_path = '/home/wenjing/storage/ScanNetv2/scannetv2_val.txt'
-    json_file = '/home/wenjing/storage/anno/val_big_crowd.txt'
-    # convert(img_path, json_file, mode='val_scan', aa=312, bb= 30)
-
+    json_file = '/home/wenjing/storage/anno/val_git_many.txt'
+    convert(img_path, json_file, mode='val_scan', aa=312, bb=30)
+    # img_path = '/home/wenjing/storage/ScanNetv2/test.txt'
+    # json_file = '/home/wenjing/storage/anno/ground1.txt'
+    # convert(img_path, json_file, mode='test', aa=10, bb=5000)
     # b in range 1, 45

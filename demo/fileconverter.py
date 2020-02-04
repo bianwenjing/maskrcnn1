@@ -118,20 +118,24 @@ def convert(img_path, json_file, mode, aa, bb):
                             anno_id += 1
             img_id += 1
     print(mode, "data number :", img_id)
-    json_fp = open(json_file, 'w')
-    json_str = json.dumps(Js, indent=4)
-    json_fp.write(json_str)
-    json_fp.close()
+    # json_fp = open(json_file, 'w')
+    # json_str = json.dumps(Js, indent=4)
+    # json_fp.write(json_str)
+    # json_fp.close()
+    with open(json_file, 'w') as json_fp:
+        json.dump(Js, json_fp, indent=4)
     f.close()
     tsvfile.close()
 
 if __name__ == '__main__':
     img_path = '/home/wenjing/storage/ScanNetv2/scannetv2_train.txt'
     json_file = '/home/wenjing/storage/anno/train_big_real.txt'
-    convert(img_path, json_file, mode = 'train_scan', aa = 1201, bb = 30)
+    convert(img_path, json_file, mode='train_scan', aa = 1201, bb = 30)
     # a in range 1,1201
     img_path = '/home/wenjing/storage/ScanNetv2/scannetv2_val.txt'
     json_file = '/home/wenjing/storage/anno/val_big_real.txt'
     convert(img_path, json_file, mode='val_scan', aa=312, bb= 30)
-
+    # img_path = '/home/wenjing/storage/ScanNetv2/val.txt'
+    # json_file = '/home/wenjing/storage/anno/ground3.txt'
+    # convert(img_path, json_file, mode='val', aa=10, bb=5000)
     # b in range 1, 45
