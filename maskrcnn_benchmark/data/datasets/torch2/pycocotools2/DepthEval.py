@@ -93,8 +93,6 @@ class DEPTHeval(COCOeval):
         if p.maxDets:
             p.maxDets = sorted(p.maxDets)
         self.params = p
-
-
         self._prepare()
 
 
