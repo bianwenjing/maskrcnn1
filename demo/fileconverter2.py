@@ -82,17 +82,18 @@ def convert(img_path, json_file, mode, aa, bb):
                         area = cocomask.area(RLE)
                         [x, y, w, h] = cv.boundingRect(binary)
 
-                        Js['annotations'].append(
-                            {
-                             'segmentation': segmentation,
-                             'area': area.item(),
-                             'iscrowd': 0,
-                             'image_id': img_id,
-                             'bbox': [x, y, w, h],
-                             'category_id': cl.item(),
-                             'id': anno_id,
-                             'depth': mode + '_depth/' + aline[:12] + '/depth/' + str(jj) + '.png'})
-                        anno_id += 1
+                        if w > 0 and h > 0:
+                            Js['annotations'].append(
+                                {
+                                 'segmentation': segmentation,
+                                 'area': area.item(),
+                                 'iscrowd': 0,
+                                 'image_id': img_id,
+                                 'bbox': [x, y, w, h],
+                                 'category_id': cl.item(),
+                                 'id': anno_id,
+                                 'depth': mode + '_depth/' + aline[:12] + '/depth/' + str(jj) + '.png'})
+                            anno_id += 1
                     #########################################################################################
                     # contour_sizes = []
                     # valid_contour_id = []
