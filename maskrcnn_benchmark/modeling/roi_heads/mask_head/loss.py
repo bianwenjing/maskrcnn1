@@ -33,6 +33,11 @@ def project_masks_on_boxes(segmentation_masks, proposals, discretization_size):
     for segmentation_mask, proposal in zip(segmentation_masks, proposals):
         # crop the masks, resize them to the desired resolution and
         # then convert them to the tensor representation.
+
+        ##########################
+        if proposal[0] == proposal[2]:
+            proposal[2] += 1
+        ##################################################
         cropped_mask = segmentation_mask.crop(proposal)
         scaled_mask = cropped_mask.resize((M, M))
         mask = scaled_mask.get_mask_tensor()
