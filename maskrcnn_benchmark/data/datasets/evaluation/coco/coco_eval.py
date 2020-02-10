@@ -82,6 +82,9 @@ def do_coco_evaluation(
 
 
     results = COCOResults(*iou_types)
+    ###############################################
+    result_one_category = COCOResults(*iou_types)
+    ###############################################
     logger.info("Evaluating predictions")
     for iou_type in iou_types:
         with tempfile.NamedTemporaryFile() as f:
@@ -96,7 +99,21 @@ def do_coco_evaluation(
                 res = evaluate_predictions_on_coco(
                     dataset.coco, coco_results[iou_type], file_path, iou_type
             )
+
             results.update(res)
+############################################################################
+    res = evaluate_whole_depth_prediction(dataset.coco, coco_results[iou_types], file_path, 'segm')
+    for catId in dataset.coco.getCatIds():
+        res.params.catIds = [catId]
+        res.evaluate()
+        res.accumulate()
+        res.summarize()
+        result_one_category.update(res)
+        if output_folder:
+            name = str(catId) + ".pth"
+            torch.save(result_one_category, os.path.join(output_folder, name))
+#################################################################################
+
     logger.info(results)
     check_expected_results(results, expected_results, expected_results_sigma_tol)
     if output_folder:
@@ -474,13 +491,13 @@ def evaluate_predictions_on_coco(
     coco_eval.summarize()
 ##############################################################################################
 #for each category
-    for catId in coco_gt.getCatIds():
-        print('£££££££££££££££££££££££',catId) #input category id
-        coco_eval = COCOeval(coco_gt, coco_dt, iou_type)
-        coco_eval.params.catIds = [catId]
-        coco_eval.evaluate()
-        coco_eval.accumulate()
-        coco_eval.summarize()
+    # for catId in coco_gt.getCatIds():
+    #     print('£££££££££££££££££££££££',catId) #input category id
+    #     coco_eval.params.catIds = [catId]
+    #     coco_eval.evaluate()
+    #     coco_eval.accumulate()
+    #     coco_eval.summarize()
+
     return coco_eval
 #####################################################################
 def evaluate_depth_predictions(
