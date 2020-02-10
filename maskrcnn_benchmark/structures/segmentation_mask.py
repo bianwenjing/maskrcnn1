@@ -121,8 +121,8 @@ class BinaryMaskList(object):
         current_width, current_height = self.size
         xmin, ymin, xmax, ymax = [round(float(b)) for b in box]
 
-        # assert xmin <= xmax and ymin <= ymax, str(box)
-        assert xmin < xmax and ymin < ymax, str(box)
+        assert xmin <= xmax and ymin <= ymax, str(box)
+        # assert xmin < xmax and ymin < ymax, str(box)
         xmin = min(max(xmin, 0), current_width - 1)
         ymin = min(max(ymin, 0), current_height - 1)
 
@@ -420,6 +420,9 @@ class PolygonList(object):
 
     def crop(self, box):
         w, h = box[2] - box[0], box[3] - box[1]
+        #########################################
+        
+        ########################################
         cropped_polygons = []
         for polygon in self.polygons:
             cropped_polygons.append(polygon.crop(box))
