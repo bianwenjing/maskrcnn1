@@ -95,14 +95,14 @@ def do_train(
 
         # print('%%%%%%%%%%%%%%', iteration, loss_dict['loss_mask'])
         #
-        # writer.add_scalar('classifier loss',loss_dict['loss_classifier'], iteration)
-        # writer.add_scalar('box reg loss', loss_dict['loss_box_reg'], iteration)
-        # writer.add_scalar('mask loss', loss_dict['loss_mask'], iteration)
-        # # writer.add_scalar('whole_depth loss', loss_dict['whole_depth_loss'], iteration)
-        # # writer.add_scalar('depth loss', loss_dict['loss_depth'], iteration)
-        # writer.add_scalar('objectness loss', loss_dict['loss_objectness'], iteration)
-        # writer.add_scalar('rpn box reg loss', loss_dict['loss_rpn_box_reg'], iteration)
-        # writer.add_scalar('lr', optimizer.param_groups[0]["lr"], iteration)
+        writer.add_scalar('classifier loss',loss_dict['loss_classifier'], iteration)
+        writer.add_scalar('box reg loss', loss_dict['loss_box_reg'], iteration)
+        writer.add_scalar('mask loss', loss_dict['loss_mask'], iteration)
+        # writer.add_scalar('whole_depth loss', loss_dict['whole_depth_loss'], iteration)
+        # writer.add_scalar('depth loss', loss_dict['loss_depth'], iteration)
+        writer.add_scalar('objectness loss', loss_dict['loss_objectness'], iteration)
+        writer.add_scalar('rpn box reg loss', loss_dict['loss_rpn_box_reg'], iteration)
+        writer.add_scalar('lr', optimizer.param_groups[0]["lr"], iteration)
 
         # reduce losses over all GPUs for logging purposes
         loss_dict_reduced = reduce_loss_dict(loss_dict)
@@ -143,14 +143,14 @@ def do_train(
                 )
             )
 
-            writer.add_scalar('classifier loss', loss_dict['loss_classifier'], iteration)
-            writer.add_scalar('box reg loss', loss_dict['loss_box_reg'], iteration)
-            writer.add_scalar('mask loss', loss_dict['loss_mask'], iteration)
-            # writer.add_scalar('whole_depth loss', loss_dict['whole_depth_loss'], iteration)
-            # writer.add_scalar('depth loss', loss_dict['loss_depth'], iteration)
-            writer.add_scalar('objectness loss', loss_dict['loss_objectness'], iteration)
-            writer.add_scalar('rpn box reg loss', loss_dict['loss_rpn_box_reg'], iteration)
-            writer.add_scalar('lr', optimizer.param_groups[0]["lr"], iteration)
+            # writer.add_scalar('classifier loss', loss_dict['loss_classifier'], iteration)
+            # writer.add_scalar('box reg loss', loss_dict['loss_box_reg'], iteration)
+            # writer.add_scalar('mask loss', loss_dict['loss_mask'], iteration)
+            # # writer.add_scalar('whole_depth loss', loss_dict['whole_depth_loss'], iteration)
+            # # writer.add_scalar('depth loss', loss_dict['loss_depth'], iteration)
+            # writer.add_scalar('objectness loss', loss_dict['loss_objectness'], iteration)
+            # writer.add_scalar('rpn box reg loss', loss_dict['loss_rpn_box_reg'], iteration)
+            # writer.add_scalar('lr', optimizer.param_groups[0]["lr"], iteration)
 
         if iteration % checkpoint_period == 0:
             checkpointer.save("model_{:07d}".format(iteration), **arguments)

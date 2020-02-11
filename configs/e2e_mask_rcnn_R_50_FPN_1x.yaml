@@ -2,8 +2,8 @@ MODEL:
   META_ARCHITECTURE: "GeneralizedRCNN"
   # WEIGHT: "catalog://ImageNetPretrained/MSRA/R-50"
 #  WEIGHT: "/home/wenjing/storage/result/result_/no_last_layers.pth"
-  WEIGHT: "/home/wenjing/storage/result/result11_3/model_final.pth"
-#  WEIGHT: "/home/wenjing/storage/result/result_/0095000_result1.pth"
+#  WEIGHT: "/home/wenjing/storage/result/result_/model_result11_3.pth"
+  WEIGHT: "/home/wenjing/storage/result/result11_4/model_0447500.pth"
   BACKBONE:
     CONV_BODY: "R-50-FPN"
   RESNETS:

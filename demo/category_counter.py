@@ -19,4 +19,15 @@ for i in data['annotations']:
     category_id = str(i['category_id'])
     K[category_id] += 1
 
-print(K)
+valid_category = []
+for key, item in K.items():
+    if item > 100:
+        valid_category.append(key)
+
+print(len(valid_category))
+
+valid_category = []
+for key, item in K.items():
+    if item > 50:
+        valid_category.append(key)
+print(len(valid_category))

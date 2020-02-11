@@ -17,15 +17,41 @@ def convert(img_path, json_file, mode, aa, bb):
         "annotations": [],
         "categories": []
     }
+#######################################################################################################################
+    K = {}
     with open("/home/wenjing/scannetv2-labels.combined.tsv") as tsvfile:
         tsvreader = csv.reader(tsvfile, delimiter="\t")
         lines = []
         for line in tsvreader:
             lines.append(line)
         for i in range(1, len(lines)):
-            raw_category = lines[i][1]
-            category = lines[i][2]
+            # raw_category = lines[i][1]
+            # category = lines[i][2]
             id = lines[i][0]
+            K[id] = 0
+    with open('/home/wenjing/storage/anno/train_git_many_100.txt') as json_f:
+        data = json.load(json_f)
+
+    for i in data['annotations']:
+        category_id = str(i['category_id'])
+        K[category_id] += 1
+
+    valid_category = []
+    for key, item in K.items():
+        if item > 100:
+            valid_category.append(key)
+    json_f.close()
+########################################################################################################################
+    # with open("/home/wenjing/scannetv2-labels.combined.tsv") as tsvfile:
+    #     tsvreader = csv.reader(tsvfile, delimiter="\t")
+    #     lines = []
+    #     for line in tsvreader:
+    #         lines.append(line)
+    for i in range(1, len(lines)):
+        raw_category = lines[i][1]
+        category = lines[i][2]
+        id = lines[i][0]
+        if id in valid_category:
             Js["categories"].append({"supercategory": category, "id": int(id), "name": category})
 #########################################################################################################
     img_id = 0
@@ -64,8 +90,8 @@ def convert(img_path, json_file, mode, aa, bb):
                 classes_full = np.delete(classes_full, 0)
             class_label = []
             for i in classes_full:
-                # if i in class_20:
-                class_label.append(i)
+                if i in valid_category:
+                    class_label.append(i)
             for cl in class_label:
                     cl2 = np.array(cl)
                     binary = cv.compare(label, cl2, cmpop=cv.CMP_EQ)
@@ -155,6 +181,7 @@ def convert(img_path, json_file, mode, aa, bb):
                             # anno_id += 1
             img_id += 1
     print(mode, "data number :", img_id)
+    print('category_number: ', len(valid_category))
     # json_fp = open(json_file, 'w')
     # json_str = json.dumps(Js, indent=4)
     # json_fp.write(json_str)
@@ -165,14 +192,14 @@ def convert(img_path, json_file, mode, aa, bb):
     tsvfile.close()
 
 if __name__ == '__main__':
-    # img_path = '/home/wenjing/storage/ScanNetv2/scannetv2_train.txt'
-    # json_file = '/home/wenjing/storage/anno/train_git_many_100.txt'
-    # convert(img_path, json_file, mode = 'train_scan', aa=1201, bb=100)
-    # # a in range 1,1201
-    # img_path = '/home/wenjing/storage/ScanNetv2/scannetv2_val.txt'
-    # json_file = '/home/wenjing/storage/anno/val_git_many_100.txt'
-    # convert(img_path, json_file, mode='val_scan', aa=312, bb=100)
     img_path = '/home/wenjing/storage/ScanNetv2/scannetv2_train.txt'
-    json_file = '/home/wenjing/storage/anno/ground_train.txt'
-    convert(img_path, json_file, mode='train_scan', aa=10, bb=5000)
+    json_file = '/home/wenjing/storage/anno/train_git_many_100_reduced.txt'
+    convert(img_path, json_file, mode='train_scan', aa=1201, bb=100)
+    # a in range 1,1201
+    img_path = '/home/wenjing/storage/ScanNetv2/scannetv2_val.txt'
+    json_file = '/home/wenjing/storage/anno/val_git_many_100_reduced.txt'
+    convert(img_path, json_file, mode='val_scan', aa=312, bb=100)
+    # img_path = '/home/wenjing/storage/ScanNetv2/scannetv2_train.txt'
+    # json_file = '/home/wenjing/storage/anno/ground_train.txt'
+    # convert(img_path, json_file, mode='train_scan', aa=10, bb=5000)
     # b in range 1, 45

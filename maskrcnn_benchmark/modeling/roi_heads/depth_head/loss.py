@@ -57,7 +57,8 @@ class MaskRCNNLossComputation(object):
         match_quality_matrix = boxlist_iou(target, proposal)
         matched_idxs = self.proposal_matcher(match_quality_matrix)
         # Mask RCNN needs "labels" and "masks "fields for creating the targets
-        target = target.copy_with_fields(["labels", "depth", "masks", "intrinsic"])
+        # target = target.copy_with_fields(["labels", "depth", "masks", "intrinsic"])
+        target = target.copy_with_fields(["labels", "depth", "masks"])
         # get the targets corresponding GT for each proposal
         # NB: need to clamp the indices because we can have a single
         # GT in the image, and matched_idxs can be -2, which goes
@@ -93,7 +94,7 @@ class MaskRCNNLossComputation(object):
             segmentation_masks = matched_targets.get_field("masks")
             segmentation_masks = segmentation_masks[positive_inds]
 
-            focal_i = matched_targets.get_field("intrinsic")
+            # focal_i = matched_targets.get_field("intrinsic")
 
             positive_proposals = proposals_per_image[positive_inds]
 
@@ -109,7 +110,8 @@ class MaskRCNNLossComputation(object):
             maps.append(maps_per_image)
             masks.append(masks_per_image)
 
-        return labels, maps, masks, focal_i[0]
+        # return labels, maps, masks, focal_i[0]
+        return labels, maps, masks
 
     def __call__(self, proposals, depth_logits, targets):
         """
@@ -122,8 +124,8 @@ class MaskRCNNLossComputation(object):
             mask_loss (Tensor): scalar tensor containing the loss
         """
 
-        labels, depth_targets, mask_targets, focal_i = self.prepare_targets(proposals, targets)
-
+        # labels, depth_targets, mask_targets, focal_i = self.prepare_targets(proposals, targets)
+        labels, depth_targets, mask_targets = self.prepare_targets(proposals, targets)
          # len(depth_targets) batch size
 
         labels = cat(labels, dim=0)
