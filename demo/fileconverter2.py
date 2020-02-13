@@ -18,41 +18,53 @@ def convert(img_path, json_file, mode, aa, bb):
         "categories": []
     }
 #######################################################################################################################
-    K = {}
-    with open("/home/wenjing/scannetv2-labels.combined.tsv") as tsvfile:
-        tsvreader = csv.reader(tsvfile, delimiter="\t")
-        lines = []
-        for line in tsvreader:
-            lines.append(line)
-        for i in range(1, len(lines)):
-            # raw_category = lines[i][1]
-            # category = lines[i][2]
-            id = lines[i][0]
-            K[id] = 0
-    with open('/home/wenjing/storage/anno/train_git_many_100.txt') as json_f:
-        data = json.load(json_f)
-
-    for i in data['annotations']:
-        category_id = str(i['category_id'])
-        K[category_id] += 1
-
-    valid_category = []
-    for key, item in K.items():
-        if item > 100:
-            valid_category.append(key)
-    json_f.close()
-########################################################################################################################
+    # K = {}
     # with open("/home/wenjing/scannetv2-labels.combined.tsv") as tsvfile:
     #     tsvreader = csv.reader(tsvfile, delimiter="\t")
     #     lines = []
     #     for line in tsvreader:
     #         lines.append(line)
+    #     for i in range(1, len(lines)):
+    #         # raw_category = lines[i][1]
+    #         # category = lines[i][2]
+    #         id = int(lines[i][0])
+    #         K[id] = 0
+    # with open('/home/wenjing/storage/anno/train_git_many_100.txt') as json_f:
+    #     data = json.load(json_f)
+    #
+    # for i in data['annotations']:
+    #     category_id = i['category_id']
+    #     K[category_id] += 1
+    #
+    # valid_category = []
+    # for key, item in K.items():
+    #     if item > 100:
+    #         valid_category.append(key)
+    # json_f.close()
+########################################################################################################################
+
+    with open("/home/wenjing/storage/category.txt", "r") as txtfile:
+        valid_category = txtfile.read().splitlines()
+        valid_category = [int(x) for x in valid_category]
+    txtfile.close()
+    with open("/home/wenjing/scannetv2-labels.combined.tsv") as tsvfile:
+        tsvreader = csv.reader(tsvfile, delimiter="\t")
+        lines = []
+        for line in tsvreader:
+            lines.append(line)
+
+    print('"""""""""', len(valid_category))
+    valid_category2 = valid_category.copy()
     for i in range(1, len(lines)):
         raw_category = lines[i][1]
         category = lines[i][2]
-        id = lines[i][0]
-        if id in valid_category:
-            Js["categories"].append({"supercategory": category, "id": int(id), "name": category})
+        id = int(lines[i][0])
+
+        if id in valid_category2:
+            valid_category2.remove(id)  # make 119 categories rather than 154
+            # print('£3333', len(valid_category2))
+            Js["categories"].append({"supercategory": category, "id": id, "name": category})
+    print('£££££££££££££££', len(Js["categories"]))
 #########################################################################################################
     img_id = 0
     anno_id = 0
@@ -182,6 +194,7 @@ def convert(img_path, json_file, mode, aa, bb):
             img_id += 1
     print(mode, "data number :", img_id)
     print('category_number: ', len(valid_category))
+    print('£££££££££££££££', len(Js["categories"]))
     # json_fp = open(json_file, 'w')
     # json_str = json.dumps(Js, indent=4)
     # json_fp.write(json_str)
@@ -193,13 +206,13 @@ def convert(img_path, json_file, mode, aa, bb):
 
 if __name__ == '__main__':
     img_path = '/home/wenjing/storage/ScanNetv2/scannetv2_train.txt'
-    json_file = '/home/wenjing/storage/anno/train_git_many_100_reduced.txt'
+    json_file = '/home/wenjing/storage/anno/train_git_many_100_reduced3.txt'
     convert(img_path, json_file, mode='train_scan', aa=1201, bb=100)
     # a in range 1,1201
     img_path = '/home/wenjing/storage/ScanNetv2/scannetv2_val.txt'
-    json_file = '/home/wenjing/storage/anno/val_git_many_100_reduced.txt'
+    json_file = '/home/wenjing/storage/anno/val_git_many_100_reduced3.txt'
     convert(img_path, json_file, mode='val_scan', aa=312, bb=100)
     # img_path = '/home/wenjing/storage/ScanNetv2/scannetv2_train.txt'
     # json_file = '/home/wenjing/storage/anno/ground_train.txt'
     # convert(img_path, json_file, mode='train_scan', aa=10, bb=5000)
-    # b in range 1, 45
+    # b in range 1,  312

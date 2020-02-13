@@ -90,20 +90,18 @@ class FullImageEncoder(nn.Module):
         super(FullImageEncoder, self).__init__()
         self.global_pooling = nn.AvgPool2d(8, stride=8, padding=(4, 2))  # KITTI 16 16
         self.dropout = nn.Dropout2d(p=0.5)
-        self.global_fc = nn.Linear(2048 * 6 * 5, 512)
+        self.global_fc = nn.Linear(2048 * 4 * 4, 512)
         self.relu = nn.ReLU(inplace=True)
         self.conv1 = nn.Conv2d(512, 512, 1)  # 1x1 卷积
-        self.upsample = nn.UpsamplingBilinear2d(size=(33, 45))  # KITTI 49X65 NYU 33X45
+        self.upsample = nn.UpsamplingBilinear2d(size=(25, 34))  # KITTI 49X65 NYU 33X45
 
         weights_init(self.modules(), 'xavier')
 
     def forward(self, x):
-        print('!!!!!!!!!!!!!!!!!!!!', x.shape)
         x1 = self.global_pooling(x)
-        print('# x1 size:', x1.size())
+        # print('# x1 size:', x1.size())
         x2 = self.dropout(x1)
         x3 = x2.view(-1, 2048 * 4 * 4)
-        print('!!!!!!!!!!!!!!!!!!!!!!!!', x3.shape)
         x4 = self.relu(self.global_fc(x3))
         # print('# x4 size:', x4.size())
         x4 = x4.view(-1, 512, 1, 1)
@@ -154,7 +152,6 @@ class SceneUnderstandingModule(nn.Module):
 
     def forward(self, x):
         x1 = self.encoder(x)
-
         x2 = self.aspp1(x)
         x3 = self.aspp2(x)
         x4 = self.aspp3(x)
@@ -207,7 +204,7 @@ class DORN(torch.nn.Module):
 
         self.aspp_module = SceneUnderstandingModule()
         self.orl = OrdinalRegressionLayer()
-        self.loss_evaluator = make_whole_depth_loss_evaluator()
+        self.loss_evaluator = make_whole_depth_loss_evaluator(cfg)
 
         #####################################################
         # for name, param in self.named_parameters():
@@ -216,10 +213,33 @@ class DORN(torch.nn.Module):
 
     def forward(self, features, targets = None):
         x = self.aspp_module(features)
+        print('xxxxx', x.shape)
         depth_labels, ord_labels = self.orl(x)
-        targets_c = self.get_labels_sid(targets)
+        print('££££££££££££', depth_labels)
+        print('$$$$$$$$$$$$$$$', ord_labels.shape)
         if not self.training:
             return depth_labels, {}
+        ###########################################################
+        if targets:
+            depth_targets = []
+            w = ord_labels.shape[1]
+            h = ord_labels.shape[2]
+            for box in targets:
+                box = box.get_field("depth").resize((h, w)).get_mask_tensor()
+                if len(box.shape) == 3:
+                    box = torch.squeeze(box[0])
+                # print('$$$$$$$$$$$$$$$$', box.shape)
+                depth_targets.append(box)
+
+            depth_targets_tensor = depth_targets[0]
+
+            depth_targets.pop(0)
+            for depth_target in depth_targets:
+                depth_targets_tensor = torch.stack((depth_targets_tensor, depth_target))
+            depth_targets_tensor = depth_targets_tensor.cuda().float()
+            #####################################################
+        targets_c = self.get_labels_sid(targets)
+
         loss = make_whole_depth_loss_evaluator(ord_labels, targets_c)
         return depth_labels, dict(whole_depth_loss=loss)
 
@@ -227,7 +247,7 @@ class DORN(torch.nn.Module):
         min = 0.02
         max = 80.0
         K = 68.0
-
+        print('££££££££££££££££', targets)
         if torch.cuda.is_available():
             alpha_ = torch.tensor(min).cuda()
             beta_ = torch.tensor(max).cuda()
