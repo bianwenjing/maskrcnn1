@@ -76,7 +76,8 @@ def do_train(
         iou_types = iou_types + ("depth",)
     dataset_names = cfg.DATASETS.TEST
 
-    writer = SummaryWriter()
+    if cfg.MODEL.TENSORBOARD == True:
+        writer = SummaryWriter()
 
     for iteration, (images, targets, _) in enumerate(data_loader, start_iter):
         if any(len(target) < 1 for target in targets):
@@ -93,8 +94,8 @@ def do_train(
 
         losses = sum(loss for loss in loss_dict.values())
 
-        # print('%%%%%%%%%%%%%%', iteration, loss_dict['loss_mask'])
-        #
+        print('%%%%%%%%%%%%%%', iteration, loss_dict['whole_depth_loss'])
+
         # writer.add_scalar('classifier loss',loss_dict['loss_classifier'], iteration)
         # writer.add_scalar('box reg loss', loss_dict['loss_box_reg'], iteration)
         # writer.add_scalar('mask loss', loss_dict['loss_mask'], iteration)
@@ -142,15 +143,17 @@ def do_train(
                     memory=torch.cuda.max_memory_allocated() / 1024.0 / 1024.0,
                 )
             )
-
-            writer.add_scalar('classifier loss', loss_dict['loss_classifier'], iteration)
-            writer.add_scalar('box reg loss', loss_dict['loss_box_reg'], iteration)
-            writer.add_scalar('mask loss', loss_dict['loss_mask'], iteration)
-            # writer.add_scalar('whole_depth loss', loss_dict['whole_depth_loss'], iteration)
-            # writer.add_scalar('depth loss', loss_dict['loss_depth'], iteration)
-            writer.add_scalar('objectness loss', loss_dict['loss_objectness'], iteration)
-            writer.add_scalar('rpn box reg loss', loss_dict['loss_rpn_box_reg'], iteration)
-            writer.add_scalar('lr', optimizer.param_groups[0]["lr"], iteration)
+            if cfg.MODEL.TENSORBOARD == True:
+                writer.add_scalar('classifier loss', loss_dict['loss_classifier'], iteration)
+                writer.add_scalar('box reg loss', loss_dict['loss_box_reg'], iteration)
+                writer.add_scalar('mask loss', loss_dict['loss_mask'], iteration)
+                writer.add_scalar('objectness loss', loss_dict['loss_objectness'], iteration)
+                writer.add_scalar('rpn box reg loss', loss_dict['loss_rpn_box_reg'], iteration)
+                writer.add_scalar('lr', optimizer.param_groups[0]["lr"], iteration)
+                if cfg.MODEL.DEPTH_ON:
+                    writer.add_scalar('depth loss', loss_dict['loss_depth'], iteration)
+                if cfg.MODEL.WHOLE_DEPTH_ON:
+                    writer.add_scalar('whole_depth loss', loss_dict['whole_depth_loss'], iteration)
 
         if iteration % checkpoint_period == 0:
             checkpointer.save("model_{:07d}".format(iteration), **arguments)
@@ -203,7 +206,8 @@ def do_train(
             )
         if iteration == max_iter:
             checkpointer.save("model_final", **arguments)
-    writer.close()
+    if cfg.MODEL.TENSORBOARD == True:
+        writer.close()
     total_training_time = time.time() - start_training_time
     total_time_str = str(datetime.timedelta(seconds=total_training_time))
     logger.info(

@@ -145,7 +145,7 @@ class SceneUnderstandingModule(nn.Module):
             nn.Dropout2d(p=0.5),
             nn.Conv2d(2048, 136, 1),  # KITTI 142 NYU 136 In paper, K = 80 is best, so use 160 is good!
             # nn.UpsamplingBilinear2d(scale_factor=8)
-            nn.UpsamplingBilinear2d(size=(257, 353))
+            nn.UpsamplingBilinear2d(size=(385, 513))
         )
 
         weights_init(self.modules(), type='xavier')
@@ -192,7 +192,7 @@ class OrdinalRegressionLayer(nn.Module):
 
         ord_c1 = ord_c[:, 1, :].clone()
         ord_c1 = ord_c1.view(-1, ord_num, H, W)
-        print('ord > 0.5 size:', (ord_c1 > 0.5).size())
+        # print('ord > 0.5 size:', (ord_c1 > 0.5).size())
         decode_c = torch.sum((ord_c1 > 0.5), dim=1).view(-1, 1, H, W)
         # decode_c = torch.sum(ord_c1, dim=1).view(-1, 1, H, W)
         return decode_c, ord_c1
@@ -212,53 +212,58 @@ class DORN(torch.nn.Module):
         #####################################################
 
     def forward(self, features, targets = None):
-        x = self.aspp_module(features)
-        print('xxxxx', x.shape)
+        x = self.aspp_module(features) # 2,1, 385, 513
         depth_labels, ord_labels = self.orl(x)
-        print('££££££££££££', depth_labels)
-        print('$$$$$$$$$$$$$$$', ord_labels.shape)
+        # depth_label (2, 1, 385, 513)
+        # ord_labels (2, 68, 385, 513)
         if not self.training:
             return depth_labels, {}
         ###########################################################
-        if targets:
-            depth_targets = []
-            w = ord_labels.shape[1]
-            h = ord_labels.shape[2]
-            for box in targets:
-                box = box.get_field("depth").resize((h, w)).get_mask_tensor()
-                if len(box.shape) == 3:
-                    box = torch.squeeze(box[0])
-                # print('$$$$$$$$$$$$$$$$', box.shape)
+        depth_targets = []
+        w = ord_labels.shape[2]
+        h = ord_labels.shape[3]
+
+        for box in targets:
+            box = box.get_field("depth").resize((h, w)).get_mask_tensor()
+            if len(box.shape) == 3:
+                depth_targets.append(box[0])
+                # box = torch.squeeze(box[0])
+            else:
                 depth_targets.append(box)
 
-            depth_targets_tensor = depth_targets[0]
+        depth_targets_tensor = depth_targets[0]
+        depth_targets.pop(0)
+        for depth_target in depth_targets:
+            depth_targets_tensor = torch.stack((depth_targets_tensor, depth_target))
+        depth_targets_tensor = depth_targets_tensor.cuda().float()
+        if len(depth_targets_tensor.shape)==3:
+            depth_targets_tensor = depth_targets_tensor[:, None, :, :]
+        else:
+            depth_targets_tensor = depth_targets_tensor[None, None, :, :]
+        #####################################################
+        targets_c = self.get_labels_sid(depth_targets_tensor)
 
-            depth_targets.pop(0)
-            for depth_target in depth_targets:
-                depth_targets_tensor = torch.stack((depth_targets_tensor, depth_target))
-            depth_targets_tensor = depth_targets_tensor.cuda().float()
-            #####################################################
-        targets_c = self.get_labels_sid(targets)
-
-        loss = make_whole_depth_loss_evaluator(ord_labels, targets_c)
+        loss = self.loss_evaluator(ord_labels, targets_c)
         return depth_labels, dict(whole_depth_loss=loss)
 
-    def get_labels_sid(self, targets):
-        min = 0.02
-        max = 80.0
+    def get_labels_sid(args, depth):
+        alpha = 0.02
+        beta = 10.0
         K = 68.0
-        print('££££££££££££££££', targets)
+
+        alpha = torch.tensor(alpha)
+        beta = torch.tensor(beta)
+        K = torch.tensor(K)
+
         if torch.cuda.is_available():
-            alpha_ = torch.tensor(min).cuda()
-            beta_ = torch.tensor(max).cuda()
-            K_ = torch.tensor(K).cuda()
-        else:
-            alpha_ = torch.tensor(min)
-            beta_ = torch.tensor(max)
-            K_ = torch.tensor(K)
-        depth = alpha_ * (beta_ / alpha_) ** (targets / K_)
-        # print(depth.size())
-        return depth.float()
+            alpha = alpha.cuda()
+            beta = beta.cuda()
+            K = K.cuda()
+
+        labels = K * torch.log(depth / alpha) / torch.log(beta / alpha)
+        if torch.cuda.is_available():
+            labels = labels.cuda()
+        return labels.int()
 
 class ORIG(torch.nn.Module):
     def __init__(self, cfg, in_channels):

@@ -149,12 +149,12 @@ class DatasetCatalog(object):
         },
         "ScanNet_train":{
             "img_dir": "/home/wenjing/storage/ScanNetv2/train_scan",
-            "ann_dir": "/home/wenjing/storage/anno/train_git_many_100_reduced3.txt",
+            "ann_dir": "/home/wenjing/storage/anno/train_git_many_100.txt",
             # "ann_dir": "/home/wenjing/anno/train_focal.txt"
         },
         "ScanNet_val": {
             "img_dir": "/home/wenjing/storage/ScanNetv2/val_scan",
-            "ann_dir": "/home/wenjing/storage/anno/val_git_many_100_reduced3.txt"
+            "ann_dir": "/home/wenjing/storage/anno/val_git_many_100.txt"
             # "ann_dir": "/home/wenjing/anno/val_focal.txt"
 
         },

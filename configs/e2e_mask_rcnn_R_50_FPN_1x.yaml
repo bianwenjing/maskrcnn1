@@ -1,8 +1,8 @@
 MODEL:
   META_ARCHITECTURE: "GeneralizedRCNN"
   # WEIGHT: "catalog://ImageNetPretrained/MSRA/R-50"
-  WEIGHT: "/home/wenjing/storage/result/result_/no_last_layers.pth"
-#  WEIGHT: "/home/wenjing/storage/result/result_/model_result11_3.pth"
+#  WEIGHT: "/home/wenjing/storage/result/result_/no_last_layers.pth"
+  WEIGHT: "/home/wenjing/storage/result/result_/model_result11_4.pth"
 #  WEIGHT: "/home/wenjing/storage/result/result11_4/model_0447500.pth"
   BACKBONE:
     CONV_BODY: "R-50-FPN"
@@ -24,7 +24,7 @@ MODEL:
     FEATURE_EXTRACTOR: "FPN2MLPFeatureExtractor"
     PREDICTOR: "FPNPredictor"
 #    NUM_CLASSES: 20
-    NUM_CLASSES: 120
+    NUM_CLASSES: 608
   ROI_MASK_HEAD:
     POOLER_SCALES: (0.25, 0.125, 0.0625, 0.03125)
     FEATURE_EXTRACTOR: "MaskRCNNFPNFeatureExtractor"
@@ -45,10 +45,10 @@ MODEL:
   WHOLE_DEPTH:
     MODEL_OPTION: 'DORN'
 
-
+  TENSORBOARD: True
   MASK_ON: True
   DEPTH_ON: False
-  WHOLE_DEPTH_ON: False
+  WHOLE_DEPTH_ON: True
 #  MODEL_OPTION: 0
 DATASETS:
 #  TRAIN: ("coco_2014_train", "coco_2014_valminusminival")
