@@ -94,7 +94,6 @@ def do_train(
 
         losses = sum(loss for loss in loss_dict.values())
 
-        print('%%%%%%%%%%%%%%', iteration, loss_dict['whole_depth_loss'])
 
         # writer.add_scalar('classifier loss',loss_dict['loss_classifier'], iteration)
         # writer.add_scalar('box reg loss', loss_dict['loss_box_reg'], iteration)

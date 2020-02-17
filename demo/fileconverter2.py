@@ -43,7 +43,7 @@ def convert(img_path, json_file, mode, aa, bb):
     # json_f.close()
 ########################################################################################################################
 
-    with open("/home/wenjing/storage/category.txt", "r") as txtfile:
+    with open("/home/wenjing/storage/category_full.txt", "r") as txtfile:
         valid_category = txtfile.read().splitlines()
         valid_category = [int(x) for x in valid_category]
     txtfile.close()
@@ -52,7 +52,7 @@ def convert(img_path, json_file, mode, aa, bb):
         lines = []
         for line in tsvreader:
             lines.append(line)
-
+    #
     print('"""""""""', len(valid_category))
     valid_category2 = valid_category.copy()
     for i in range(1, len(lines)):
@@ -206,11 +206,11 @@ def convert(img_path, json_file, mode, aa, bb):
 
 if __name__ == '__main__':
     img_path = '/home/wenjing/storage/ScanNetv2/scannetv2_train.txt'
-    json_file = '/home/wenjing/storage/anno/train_git_many_100_reduced3.txt'
+    json_file = '/home/wenjing/storage/anno/train_git_many_549.txt'
     convert(img_path, json_file, mode='train_scan', aa=1201, bb=100)
     # a in range 1,1201
     img_path = '/home/wenjing/storage/ScanNetv2/scannetv2_val.txt'
-    json_file = '/home/wenjing/storage/anno/val_git_many_100_reduced3.txt'
+    json_file = '/home/wenjing/storage/anno/val_git_many_549.txt'
     convert(img_path, json_file, mode='val_scan', aa=312, bb=100)
     # img_path = '/home/wenjing/storage/ScanNetv2/scannetv2_train.txt'
     # json_file = '/home/wenjing/storage/anno/ground_train.txt'

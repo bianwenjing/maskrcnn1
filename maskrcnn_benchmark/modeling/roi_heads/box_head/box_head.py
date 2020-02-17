@@ -21,7 +21,7 @@ class ROIBoxHead(torch.nn.Module):
         self.post_processor = make_roi_box_post_processor(cfg)
         self.loss_evaluator = make_roi_box_loss_evaluator(cfg)
         ##############################################################################
-        if cfg.MODEL.DEPTH_ON:
+        if cfg.MODEL.FREEZE:
             for name, param in self.named_parameters():
                 param.requires_grad = False
         #########################################################################
