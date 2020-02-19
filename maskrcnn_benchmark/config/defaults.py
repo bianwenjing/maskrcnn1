@@ -26,7 +26,9 @@ _C.MODEL.MASK_ON = False
 _C.MODEL.RETINANET_ON = False
 _C.MODEL.KEYPOINT_ON = False
 _C.MODEL.DEPTH_ON = False
-_C.MODEL.FREEZE = False
+_C.MODEL.FREEZE_BOX_MASK = False
+_C.MODEL.FREEZE_FPN = False
+_C.MODEL.FREEZE_RPN = False
 _C.MODEL.TENSORBOARD = False
 _C.MODEL.DEVICE = "cuda"
 _C.MODEL.META_ARCHITECTURE = "GeneralizedRCNN"
@@ -104,7 +106,7 @@ _C.MODEL.BACKBONE = CN()
 _C.MODEL.BACKBONE.CONV_BODY = "R-50-C4"
 
 # Add StopGrad at a specified stage so the bottom layers are frozen
-_C.MODEL.BACKBONE.FREEZE_CONV_BODY_AT = 5
+_C.MODEL.BACKBONE.FREEZE_CONV_BODY_AT = 2
 
 
 # ---------------------------------------------------------------------------- #

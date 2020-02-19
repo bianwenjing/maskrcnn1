@@ -2,7 +2,7 @@ MODEL:
   META_ARCHITECTURE: "GeneralizedRCNN"
 #  WEIGHT: "/home/wenjing/result3/model_final.pth"
 #  WEIGHT: "/home/wenjing/result_/0720000_result6.pth"
-  WEIGHT: "/home/wenjing/storage/result/result11_3/model_0720000.pth"
+  WEIGHT: "/home/wenjing/storage/result/result11_4/model_0125000.pth"
   BACKBONE:
     CONV_BODY: "R-50-FPN"
   RESNETS:
@@ -22,6 +22,7 @@ MODEL:
     POOLER_SAMPLING_RATIO: 2
     FEATURE_EXTRACTOR: "FPN2MLPFeatureExtractor"
     PREDICTOR: "FPNPredictor"
+    NUM_CLASSES: 608
   ROI_MASK_HEAD:
     POOLER_SCALES: (0.25, 0.125, 0.0625, 0.03125)
     FEATURE_EXTRACTOR: "MaskRCNNFPNFeatureExtractor"

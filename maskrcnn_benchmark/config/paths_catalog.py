@@ -150,6 +150,7 @@ class DatasetCatalog(object):
         "ScanNet_train":{
             "img_dir": "/home/wenjing/storage/ScanNetv2/train_scan",
             "ann_dir": "/home/wenjing/storage/anno/train_git_many_549.txt",
+            # "ann_dir": "/home/wenjing/storage/anno/train_git_many_100.txt",
             # "ann_dir": "/home/wenjing/anno/train_focal.txt"
         },
         "ScanNet_val": {
