@@ -71,7 +71,7 @@ def convert(img_path, json_file, mode, aa, bb):
     f = open(img_path, "r")
     for ii in range(aa):
         aline = f.readline()
-        for jj in range(0, 5000, bb):
+        for jj in range(0, 20000, bb):
             if not os.path.isfile('/home/wenjing/storage/ScanNetv2/' + mode + '_label/' + aline[:12] + '/label-filt/' + str(jj) +'.png'):
                 break
             label = Image.open('/home/wenjing/storage/ScanNetv2/' + mode + '_label/' + aline[:12] + '/label-filt/' + str(jj) +'.png')
@@ -206,12 +206,12 @@ def convert(img_path, json_file, mode, aa, bb):
 
 if __name__ == '__main__':
     img_path = '/home/wenjing/storage/ScanNetv2/scannetv2_train.txt'
-    json_file = '/home/wenjing/storage/anno/train_git_many_549.txt'
-    convert(img_path, json_file, mode='train_scan', aa=1201, bb=100)
+    json_file = '/home/wenjing/storage/anno/train_git_many_549_30.txt'
+    convert(img_path, json_file, mode='train_scan', aa=1201, bb=30)
     # a in range 1,1201
-    img_path = '/home/wenjing/storage/ScanNetv2/scannetv2_val.txt'
-    json_file = '/home/wenjing/storage/anno/val_git_many_549.txt'
-    convert(img_path, json_file, mode='val_scan', aa=312, bb=100)
+    # img_path = '/home/wenjing/storage/ScanNetv2/scannetv2_val.txt'
+    # json_file = '/home/wenjing/storage/anno/val_git_many_549.txt'
+    # convert(img_path, json_file, mode='val_scan', aa=312, bb=100)
     # img_path = '/home/wenjing/storage/ScanNetv2/scannetv2_train.txt'
     # json_file = '/home/wenjing/storage/anno/ground_train.txt'
     # convert(img_path, json_file, mode='train_scan', aa=10, bb=5000)

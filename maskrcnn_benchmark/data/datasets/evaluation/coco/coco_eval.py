@@ -102,16 +102,17 @@ def do_coco_evaluation(
 
             results.update(res)
 ############################################################################
-    res = evaluate_whole_depth_prediction(dataset.coco, coco_results[iou_types], file_path, 'segm')
-    for catId in dataset.coco.getCatIds():
-        res.params.catIds = [catId]
-        res.evaluate()
-        res.accumulate()
-        res.summarize()
-        result_one_category.update(res)
-        if output_folder:
-            name = str(catId) + ".pth"
-            torch.save(result_one_category, os.path.join(output_folder, name))
+    ############### segmentation inference for each category
+    # res = evaluate_whole_depth_prediction(dataset.coco, coco_results[iou_types], file_path, 'segm')
+    # for catId in dataset.coco.getCatIds():
+    #     res.params.catIds = [catId]
+    #     res.evaluate()
+    #     res.accumulate()
+    #     res.summarize()
+    #     result_one_category.update(res)
+    #     if output_folder:
+    #         name = str(catId) + ".pth"
+    #         torch.save(result_one_category, os.path.join(output_folder, name))
 #################################################################################
 
     logger.info(results)

@@ -12,13 +12,14 @@ with open("/home/wenjing/scannetv2-labels.combined.tsv") as tsvfile:
         category = lines[i][2]
         id = lines[i][0]
         K[id] = 0
+tsvfile.close()
 with open('/home/wenjing/storage/anno/train_git_many_100.txt') as json_file:
     data = json.load(json_file)
 
 # for i in data['annotations']:
 #     category_id = str(i['category_id'])
 #     K[category_id] += 1
-
+json_file.close()
 for i in data['annotations']:
     category_id = str(i['category_id'])
     K[category_id] += 1
