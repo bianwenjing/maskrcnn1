@@ -206,8 +206,8 @@ def convert(img_path, json_file, mode, aa, bb):
 
 if __name__ == '__main__':
     img_path = '/home/wenjing/storage/ScanNetv2/scannetv2_train.txt'
-    json_file = '/home/wenjing/storage/anno/train_git_many_549_30.txt'
-    convert(img_path, json_file, mode='train_scan', aa=1201, bb=30)
+    json_file = '/home/wenjing/storage/anno/train_git_many_549_test.txt'
+    convert(img_path, json_file, mode='train_scan', aa=12, bb=3000)
     # a in range 1,1201
     # img_path = '/home/wenjing/storage/ScanNetv2/scannetv2_val.txt'
     # json_file = '/home/wenjing/storage/anno/val_git_many_549.txt'
