@@ -34,6 +34,7 @@ class GeneralizedRCNN(nn.Module):
         self.rpn = build_rpn(cfg, self.backbone.out_channels)
         self.roi_heads = build_roi_heads(cfg, self.backbone.out_channels)
         self.whole_depth_on = cfg.MODEL.WHOLE_DEPTH_ON
+        self.FPN_RES = cfg.MODEL.BACKBONE.CONV_BODY
         ###################################################################################
         if self.whole_depth_on:
             self.whole_depth = whole_depth(cfg, 2048)
@@ -54,7 +55,10 @@ class GeneralizedRCNN(nn.Module):
         if self.training and targets is None:
             raise ValueError("In training mode, targets should be passed")
         images = to_image_list(images)
-        features, resnet_output = self.backbone(images.tensors)
+        if self.FPN_RES == "R-50-FPN":
+            features, resnet_output = self.backbone(images.tensors)
+        else:
+            features = self.backbone(images.tensors)
         # print('!!!!!!!!!!!!!!!!!', resnet_output.shape) (2,2048,25,34)
         proposals, proposal_losses = self.rpn(images, features, targets)
         if self.roi_heads:

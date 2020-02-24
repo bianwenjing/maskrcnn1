@@ -77,7 +77,7 @@ def do_train(
     dataset_names = cfg.DATASETS.TEST
 
     if cfg.MODEL.TENSORBOARD == True:
-        writer = SummaryWriter()
+        writer = SummaryWriter(log_dir='runs/result14/result16_res')
 
     for iteration, (images, targets, _) in enumerate(data_loader, start_iter):
         if any(len(target) < 1 for target in targets):
@@ -145,10 +145,11 @@ def do_train(
             if cfg.MODEL.TENSORBOARD == True:
                 writer.add_scalar('classifier loss', loss_dict['loss_classifier'], iteration)
                 writer.add_scalar('box reg loss', loss_dict['loss_box_reg'], iteration)
-                writer.add_scalar('mask loss', loss_dict['loss_mask'], iteration)
                 writer.add_scalar('objectness loss', loss_dict['loss_objectness'], iteration)
                 writer.add_scalar('rpn box reg loss', loss_dict['loss_rpn_box_reg'], iteration)
                 writer.add_scalar('lr', optimizer.param_groups[0]["lr"], iteration)
+                if cfg.MODEL.MASK_ON:
+                    writer.add_scalar('mask loss', loss_dict['loss_mask'], iteration)
                 if cfg.MODEL.DEPTH_ON:
                     writer.add_scalar('depth loss', loss_dict['loss_depth'], iteration)
                 if cfg.MODEL.WHOLE_DEPTH_ON:
