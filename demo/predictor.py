@@ -153,7 +153,7 @@ class COCODemo(object):
         # result = self.overlay_class_names(result, ground_truth)
         return result
 
-    def run_on_opencv_image(self, image, depth=False):
+    def run_on_opencv_image(self, image, depth=''):
         """
         Arguments:
             image (np.ndarray): an image as returned by OpenCV
@@ -163,11 +163,14 @@ class COCODemo(object):
                 of the detection properties can be found in the fields of
                 the BoxList via `prediction.fields()`
         """
+        self.depth_state = depth
+
         predictions = self.compute_prediction(image)
-        top_predictions = self.select_top_predictions(predictions)
+        if depth != 'whole':
+            top_predictions = self.select_top_predictions(predictions)
 
         result = image.copy()
-        if depth == False:
+        if depth == '':
             if self.show_mask_heatmaps:
                 return self.create_mask_montage(result, top_predictions)
             result = self.overlay_boxes(result, top_predictions)
@@ -180,9 +183,12 @@ class COCODemo(object):
 
             return result
         else:
-            if self.cfg.MODEL.DEPTH_ON:
+            if depth == 'object':
                 result = self.overlay_depth(result, top_predictions)
-            return result
+                return result
+            elif depth == 'whole':
+                result = predictions.get_field("whole_depth")
+                return result
 
 
 
@@ -213,18 +219,23 @@ class COCODemo(object):
         # reshape prediction (a BoxList) into the original image size
         height, width = original_image.shape[:-1]
         prediction = prediction.resize((width, height))
+        if self.depth_state == 'whole':
+            # print('***************', whole_depth.shape)
+            prediction.add_field("whole_depth", whole_depth)
 
-        if prediction.has_field("mask"):
-            # if we have masks, paste the masks in the right position
-            # in the image, as defined by the bounding boxes
-            masks = prediction.get_field("mask")
-            # always single image is passed at a time
-            masks = self.masker([masks], [prediction])[0]
-            prediction.add_field("mask", masks)
-        if prediction.has_field("depth"):
-            depths = prediction.get_field("depth")
-            depths = self.masker2([depths], [prediction])[0]
-            prediction.add_field("depth", depths)
+        else:
+            if prediction.has_field("mask"):
+                # if we have masks, paste the masks in the right position
+                # in the image, as defined by the bounding boxes
+                masks = prediction.get_field("mask")
+                # always single image is passed at a time
+                masks = self.masker([masks], [prediction])[0]
+                # print('£££££££££££', masks.shape)
+                prediction.add_field("mask", masks)
+            if self.depth_state == 'object':
+                depths = prediction.get_field("depth")
+                depths = self.masker2([depths], [prediction])[0]
+                prediction.add_field("depth", depths)
         return prediction
 
     def select_top_predictions(self, predictions):

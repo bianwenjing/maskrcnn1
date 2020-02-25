@@ -102,7 +102,7 @@ class ScanNetDataset(CocoDetection2):
             num_obj = len(depth_dir)
             depth_dir = depth_dir[0]
             depth_dir = os.path.join(self.PATH_DIR, depth_dir)
-            depth_i = Image.open(depth_dir).resize(img.size)   # (1296,968)
+            depth_i = Image.open(depth_dir).resize((320,240))   # (1296,968)
             depth_i = torch.from_numpy(np.array(depth_i))
             depth = []
             for i in range(num_obj):

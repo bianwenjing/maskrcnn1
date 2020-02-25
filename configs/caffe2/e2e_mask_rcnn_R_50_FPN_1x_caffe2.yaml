@@ -2,7 +2,7 @@ MODEL:
   META_ARCHITECTURE: "GeneralizedRCNN"
 #  WEIGHT: "/home/wenjing/result3/model_final.pth"
 #  WEIGHT: "/home/wenjing/result_/0720000_result6.pth"
-  WEIGHT: "/home/wenjing/storage/result/result11_4/model_0125000.pth"
+  WEIGHT: "/home/wenjing/storage/result/result12/model_0060000.pth"
   BACKBONE:
     CONV_BODY: "R-50-FPN"
   RESNETS:
@@ -40,7 +40,8 @@ MODEL:
     RESOLUTION: 28
     SHARE_BOX_FEATURE_EXTRACTOR: False
   MASK_ON: True
-  DEPTH_ON: True
+#  DEPTH_ON: True
+  WHOLE_DEPTH_ON: True
 DATASETS:
   # TEST: ("coco_2014_minival",)
   TEST: ("ScanNet_test",)
