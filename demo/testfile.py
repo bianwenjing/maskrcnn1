@@ -17,7 +17,8 @@ from maskrcnn_benchmark.data.datasets.mydataset import ScanNetDataset
 # this makes our figures bigger
 pylab.rcParams['figure.figsize'] = 20, 12
 
-config_file = "../configs/caffe2/e2e_mask_rcnn_R_50_FPN_1x_caffe2.yaml"
+# config_file = "../configs/caffe2/e2e_mask_rcnn_R_50_FPN_1x_caffe2.yaml"
+config_file = "../configs/caffe2/channel_r50_c4.yaml"
 
 # update the config options with the config file
 cfg.merge_from_file(config_file)
@@ -41,11 +42,11 @@ def colored_depthmap(depth, d_min=None, d_max=None):
 
 
 OBJECT_DEPTH = False
-WHOLE_DEPTH = True
-SEG_GROUND = False
+WHOLE_DEPTH = False
+SEG_GROUND = True
 
 if SEG_GROUND:
-    anno = '/home/wenjing/storage/anno/ground_val.txt'
+    anno = '/home/wenjing/storage/anno/ground_train_resize.txt'
     root = '/home/wenjing/storage/ScanNetv2/val_scan'
     a = ScanNetDataset(anno, root, True)
 
@@ -56,7 +57,9 @@ for ii in range(10):
     for jj in range(0, 1, 100):
         if not os.path.isfile('/home/wenjing/storage/ScanNetv2/val_scan/' + aline[:12] + '/color/' + str(jj) + '.jpg'):
             break
-        image = cv2.imread('/home/wenjing/storage/ScanNetv2/val_scan/' + aline[:12] + '/color/' + str(jj) + '.jpg')
+        image = Image.open('/home/wenjing/storage/ScanNetv2/val_scan/' + aline[:12] + '/color/' + str(jj) + '.jpg')
+        image = image.resize((320, 240))
+        image = np.array(image)
         print('@@@@@@@@@@@@@@@@@', aline[:12])
         predictions = coco_demo.run_on_opencv_image(image)
         writer.add_image(str(ii), predictions, 0, dataformats='HWC')
@@ -92,7 +95,7 @@ for ii in range(10):
         if OBJECT_DEPTH or WHOLE_DEPTH:
             depth_target = Image.open(
                 '/home/wenjing/storage/ScanNetv2/val_scan_depth/' + aline[:12] + '/depth/' + str(jj) + '.png')
-            depth_target = depth_target.resize((1296, 968))
+            depth_target = depth_target.resize((320, 240))
             depth_target = np.array(depth_target)
         if OBJECT_DEPTH:
             d_min = min(np.min(depth_pred), np.min(depth_target))
@@ -116,7 +119,7 @@ for ii in range(10):
         if WHOLE_DEPTH:
             whole_depth_pred = coco_demo.run_on_opencv_image(image, depth='whole')
             whole_depth_pred = whole_depth_pred[0]
-            print('£££££££££££', whole_depth_pred.shape)
+            # print('£££££££££££', whole_depth_pred.shape)
             whole_depth_pred[whole_depth_pred < 0] = 0
             whole_depth_pred = np.uint32(whole_depth_pred)
         ####################################################################################################

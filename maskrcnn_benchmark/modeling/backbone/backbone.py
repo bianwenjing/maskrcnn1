@@ -73,8 +73,9 @@ class build_resnet_fpn(nn.Module):
         )
         self.out_channels = out_channels
         ##############################################################################
-        for name, param in self.named_parameters():
-            param.requires_grad = False
+        if cfg.MODEL.FREEZE_FPN:
+            for name, param in self.named_parameters():
+                param.requires_grad = False
         #########################################################################
 
     def forward(self, x):

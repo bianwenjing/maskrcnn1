@@ -207,6 +207,7 @@ class DEPTHeval(COCOeval):
         log10_error = np.abs(np.log10(depth_g) - np.log10(depth_d))
         log10_mean = np.mean(log10_error)
         # metrics = [abs_rel, sq_rel, rmse, rmse_log, log10_mean, a1, a2, a3]
+
         inv_output = 1 / depth_d
         inv_target = 1 / depth_g
         abs_inv_diff = (inv_output - inv_target).abs()
@@ -214,6 +215,7 @@ class DEPTHeval(COCOeval):
         irmse = math.sqrt((np.power(abs_inv_diff, 2)).mean())
         mae = np.mean(abs_diff)
         log_mae = np.mean(np.abs(np.log(depth_g) - np.log(depth_d)))
+        scale_invar =
 
         metrics = [abs_rel, imae, irmse, log_mae, rmse_log, mae, rmse, scale_invar, sq_rel]
         return metrics

@@ -59,6 +59,7 @@ class GeneralizedRCNN(nn.Module):
             features, resnet_output = self.backbone(images.tensors)
         else:
             features = self.backbone(images.tensors)
+            resnet_output = features
         # print('!!!!!!!!!!!!!!!!!', resnet_output.shape) (2,2048,25,34)
         proposals, proposal_losses = self.rpn(images, features, targets)
         if self.roi_heads:

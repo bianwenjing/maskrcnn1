@@ -71,16 +71,20 @@ class ScanNetDataset(CocoDetection2):
         self._transforms = transforms
 
         self.PATH_DIR = '/home/wenjing/storage/ScanNetv2/'
+        self.img_size = (320, 240)
 
     def __getitem__(self, idx):
         img, anno = super(ScanNetDataset, self).__getitem__(idx)
+        ############################resize image################################################
+        img = img.resize(self.img_size)
+        ###########################################################################
         # filter crowd annotations
         # TODO might be better to add an extra field
         anno = [obj for obj in anno if obj["iscrowd"] == 0]
 
         boxes = [obj["bbox"] for obj in anno]
         boxes = torch.as_tensor(boxes).reshape(-1, 4)  # guard against no boxes
-        target = BoxList(boxes, img.size, mode="xywh").convert("xyxy")
+        target = BoxList(boxes, self.img_size, mode="xywh").convert("xyxy")
 
         classes = [obj["category_id"] for obj in anno]
         classes = [self.json_category_id_to_contiguous_id[c] for c in classes]
@@ -89,7 +93,7 @@ class ScanNetDataset(CocoDetection2):
 
         if anno and "segmentation" in anno[0]:
             masks = [obj["segmentation"] for obj in anno]
-            masks = SegmentationMask(masks, img.size, mode='poly')
+            masks = SegmentationMask(masks, self.img_size, mode='poly')
             target.add_field("masks", masks)
 
         if anno and "keypoints" in anno[0]:
@@ -102,12 +106,13 @@ class ScanNetDataset(CocoDetection2):
             num_obj = len(depth_dir)
             depth_dir = depth_dir[0]
             depth_dir = os.path.join(self.PATH_DIR, depth_dir)
-            depth_i = Image.open(depth_dir).resize((320,240))   # (1296,968)
+            depth_i = Image.open(depth_dir).resize(self.img_size)   # (1296,968)
             depth_i = torch.from_numpy(np.array(depth_i))
-            depth = []
+            self.l = []
+            depth = self.l
             for i in range(num_obj):
                 depth.append(depth_i)
-            depth = DepthMap(depth, img.size, mode='mask')
+            depth = DepthMap(depth, self.img_size, mode='mask')
             target.add_field("depth", depth)
         # if anno and "depth" in anno[0]:
         #     depth = [obj["depth"] for obj in anno]

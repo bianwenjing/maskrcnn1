@@ -1,0 +1,25 @@
+MODEL:
+  META_ARCHITECTURE: "GeneralizedRCNN"
+#  WEIGHT: "/home/wenjing/result3/model_final.pth"
+  WEIGHT: "/home/wenjing/storage/result/result11_4/model_0720000.pth"
+
+  ROI_BOX_HEAD:
+    NUM_CLASSES: 608
+  ROI_MASK_HEAD:
+    PREDICTOR: "MaskRCNNC4Predictor"
+    SHARE_BOX_FEATURE_EXTRACTOR: True
+  ROI_DEPTH_HEAD:
+    POOLER_SCALES: (0.25, 0.125, 0.0625, 0.03125)
+    FEATURE_EXTRACTOR: "MaskRCNNFPNFeatureExtractor"
+    PREDICTOR: "MaskRCNNC4Predictor"
+    POOLER_RESOLUTION: 14
+    POOLER_SAMPLING_RATIO: 2
+    RESOLUTION: 28
+    SHARE_BOX_FEATURE_EXTRACTOR: True
+  MASK_ON: True
+  DEPTH_ON: True
+  WHOLE_DEPTH_ON: True
+DATASETS:
+  # TEST: ("coco_2014_minival",)
+  TEST: ("ScanNet_test",)
+OUTPUT_DIR: "/home/wenjing/test1"
