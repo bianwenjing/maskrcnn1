@@ -37,7 +37,7 @@ class GeneralizedRCNN(nn.Module):
         self.FPN_RES = cfg.MODEL.BACKBONE.CONV_BODY
         ###################################################################################
         if self.whole_depth_on:
-            self.whole_depth = whole_depth(cfg, 2048)
+            self.whole_depth = whole_depth(cfg, 1)
         #####################################################################################
     def forward(self, images, targets=None):
         """

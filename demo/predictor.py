@@ -71,11 +71,26 @@ class COCODemo(object):
     #
     #
     # ]
-    CATEGORIES = []
+    CATEGORIES = ["_background"]
+    with open("/home/wenjing/storage/category_full.txt", "r") as txtfile:
+        valid_category = txtfile.read().splitlines()
+        valid_category = [int(x) for x in valid_category]
+    txtfile.close()
     with open("/home/wenjing/scannetv2-labels.combined.tsv") as tsvfile:
         tsvreader = csv.reader(tsvfile, delimiter="\t")
+        lines = []
         for line in tsvreader:
-            CATEGORIES.append(line[2])
+            lines.append(line)
+
+    for i in range(1, len(lines)):
+        raw_category = lines[i][1]
+        category = lines[i][2]
+        id = int(lines[i][0])
+
+        if id in valid_category:
+            valid_category.remove(id)
+            CATEGORIES.append(category)
+    tsvfile.close()
 
     def __init__(
         self,
@@ -333,7 +348,7 @@ class COCODemo(object):
         colors = self.compute_colors_for_labels(labels).tolist()
         # depths.shape (num, 1, 968, 1296)
         # print(colors)
-        map_ = np.zeros((1,968,1296))
+        map_ = np.zeros((1, 240, 320))
         ###########################################
         ### obejcts + background
         # for depth in depths:

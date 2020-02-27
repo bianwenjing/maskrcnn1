@@ -64,6 +64,8 @@ class ScanNetDataset(CocoDetection2):
         self.json_category_id_to_contiguous_id = {
             v: i + 1 for i, v in enumerate(self.coco.getCatIds())
         }
+        # print('£££££££££££', self.json_category_id_to_contiguous_id)
+
         self.contiguous_category_id_to_json_id = {
             v: k for k, v in self.json_category_id_to_contiguous_id.items()
         }

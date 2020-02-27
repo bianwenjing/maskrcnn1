@@ -77,7 +77,7 @@ def do_train(
     dataset_names = cfg.DATASETS.TEST
 
     if cfg.MODEL.TENSORBOARD == True:
-        writer = SummaryWriter(log_dir='runs/result14/result17_res')
+        writer = SummaryWriter()         # log_dir='runs/result14/result17_res2')
 
     for iteration, (images, targets, _) in enumerate(data_loader, start_iter):
         if any(len(target) < 1 for target in targets):

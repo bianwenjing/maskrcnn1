@@ -43,7 +43,7 @@ def colored_depthmap(depth, d_min=None, d_max=None):
 
 OBJECT_DEPTH = False
 WHOLE_DEPTH = False
-SEG_GROUND = True
+SEG_GROUND = False
 
 if SEG_GROUND:
     anno = '/home/wenjing/storage/anno/ground_train_resize.txt'

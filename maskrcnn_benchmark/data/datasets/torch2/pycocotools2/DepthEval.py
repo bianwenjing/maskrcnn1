@@ -192,8 +192,7 @@ class DEPTHeval(COCOeval):
         a3 = (thresh < 1.25 ** 3).mean()
 
         abs_diff = np.abs(depth_g - depth_d)
-
-        mse = np.mean(np.power(abs_diff,2))
+        mse = np.mean(np.square(abs_diff))
         rmse = np.sqrt(mse)
 
         # print('£££££££££££££££££££££', np.unique(depth_d))
@@ -214,8 +213,11 @@ class DEPTHeval(COCOeval):
         imae = float(abs_inv_diff.mean())
         irmse = math.sqrt((np.power(abs_inv_diff, 2)).mean())
         mae = np.mean(abs_diff)
-        log_mae = np.mean(np.abs(np.log(depth_g) - np.log(depth_d)))
-        scale_invar =
+        log_diff = np.log(depth_g) - np.log(depth_d)
+        log_mae = np.mean(np.abs(log_diff))
+
+        num_pixels = float(log_diff.size)
+        scale_invar = np.sum(np.square(log_diff)) / num_pixels - np.square(np.sum(log_diff)) / np.square(num_pixels)
 
         metrics = [abs_rel, imae, irmse, log_mae, rmse_log, mae, rmse, scale_invar, sq_rel]
         return metrics
@@ -241,11 +243,11 @@ class DEPTHeval(COCOeval):
             d = [d['depth'] for d in dt]
         else:
             raise Exception('unknown iouType for iou computation')
-        depth_g_ = Image.open('/home/wenjing/storage/ScanNetv2/' + g[0]).resize((1296, 968))
+        depth_g_ = Image.open('/home/wenjing/storage/ScanNetv2/' + g[0]).resize((320, 240))
         depth_g_ = np.array(depth_g_)
         # depth_g.shape (968,1296)
 
-        depth_d = np.zeros((968,1296))
+        depth_d = np.zeros((240,320))
         for d_part in d:
             mask = depth_d==0
             depth_i = Image.open(d_part)
@@ -264,30 +266,35 @@ class DEPTHeval(COCOeval):
         a2 = (thresh < 1.25 ** 2).mean()
         a3 = (thresh < 1.25 ** 3).mean()
 
-        rmse = (depth_d - depth_g)**2
-        rmse = np.sqrt(rmse.mean())
-        # print('@@@@@@@@@@@@@@@@@@', rmse)
+        abs_diff = np.abs(depth_g - depth_d)
 
-        # print('""""""""""""""""""', np.unique(depth_d))
-        rmse_log = (np.log(depth_g) - np.log(depth_d))**2
-        rmse_log = np.sqrt(rmse_log.mean())
+        mse = np.mean(np.square(abs_diff))
+        rmse = np.sqrt(mse)
 
-
+        mse_log = (np.log(depth_g) - np.log(depth_d)) ** 2
+        rmse_log = np.sqrt(mse_log.mean())
 
 
-        abs_rel = np.mean(np.abs(depth_d - depth_g)/depth_g)
-
-        # abs_rel_ = np.abs(depth_d - depth_g)/depth_g
-        # abs_rel_ = abs_rel_[np.logical_not(np.isinf(abs_rel_))]
-        # abs_rel = np.mean(abs_rel_)
-        sq_rel = np.mean(((depth_g-depth_d)**2)/depth_g)
-        # sq_rel_ = (depth_g-depth_d)**2/depth_g
-        # sq_rel_ = sq_rel_[np.logical_not(np.isinf(sq_rel_))]
-        # sq_rel = np.mean(sq_rel_)
+        abs_rel = np.mean(np.abs(depth_d - depth_g) / depth_g)
+        sq_rel = np.mean(((depth_g - depth_d) ** 2) / depth_g)
 
         log10_error = np.abs(np.log10(depth_g)-np.log10(depth_d))
         log10_mean = np.mean(log10_error)
-        metrics = [abs_rel, sq_rel, rmse, rmse_log, log10_mean, a1, a2, a3]
+        # metrics = [abs_rel, sq_rel, rmse, rmse_log, log10_mean, a1, a2, a3]
+
+        inv_output = 1 / depth_d
+        inv_target = 1 / depth_g
+        abs_inv_diff = (inv_output - inv_target).abs()
+        imae = float(abs_inv_diff.mean())
+        irmse = math.sqrt((np.power(abs_inv_diff, 2)).mean())
+        mae = np.mean(abs_diff)
+        log_diff = np.log(depth_g) - np.log(depth_d)
+        log_mae = np.mean(np.abs(log_diff))
+
+        num_pixels = float(log_diff.size)
+        scale_invar = np.sum(np.square(log_diff)) / num_pixels - np.square(np.sum(log_diff)) / np.square(num_pixels)
+
+        metrics = [abs_rel, imae, irmse, log_mae, rmse_log, mae, rmse, scale_invar, sq_rel]
         return metrics
 
 
