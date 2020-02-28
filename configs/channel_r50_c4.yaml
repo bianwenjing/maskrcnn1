@@ -53,14 +53,14 @@ MODEL:
     FEATURE_EXTRACTOR: 'RES'
     PREDICTOR: 'MaskRCNNC4Predictor'
 
-  TENSORBOARD: False
+  TENSORBOARD: True
   MASK_ON: True
   DEPTH_ON: False
   WHOLE_DEPTH_ON: False
 
   FREEZE_BOX_MASK: False
 #  FREEZE_FPN: False
-  FREEZE_RPN: False
+  FREEZE_RPN: True
 #  MODEL_OPTION: 0
 DATASETS:
 #  TRAIN: ("coco_2014_train", "coco_2014_valminusminival")
