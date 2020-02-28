@@ -8,6 +8,7 @@ from maskrcnn_benchmark.structures.depth_map import DepthMap
 from PIL import Image
 import os
 import numpy as np
+from PIL import ImageFilter
 
 from .torch2.coco2 import CocoDetection2
 
@@ -109,17 +110,15 @@ class ScanNetDataset(CocoDetection2):
             depth_dir = depth_dir[0]
             depth_dir = os.path.join(self.PATH_DIR, depth_dir)
             depth_i = Image.open(depth_dir).resize(self.img_size)   # (1296,968)
-            depth_i = torch.from_numpy(np.array(depth_i))
-            self.l = []
-            depth = self.l
+            depth_i = self.preprocess_depth_map(depth_i)
+            depth_i = torch.from_numpy(depth_i)
+            # self.l = []
+            # depth = self.l
+            depth = []
             for i in range(num_obj):
                 depth.append(depth_i)
             depth = DepthMap(depth, self.img_size, mode='mask')
             target.add_field("depth", depth)
-        # if anno and "depth" in anno[0]:
-        #     depth = [obj["depth"] for obj in anno]
-        #     depth = SegmentationMask(depth, img.size, mode='poly')
-        #     target.add_field("depth", depth)
 
 ###################################################################################
 ###################################################################################
@@ -139,3 +138,35 @@ class ScanNetDataset(CocoDetection2):
         img_id = self.id_to_img_map[index]
         img_data = self.coco.imgs[img_id]
         return img_data
+
+    def preprocess_depth_map(self, img):
+        b=9
+        img = np.array(img)
+        img_cut = img[b:-b, b:-b]
+        img_cut = Image.fromarray(img_cut)
+
+        img_filtered = np.array(img_cut.filter(ImageFilter.MedianFilter(size=17)))
+        mask = img_cut == 0
+        result1 = img_cut*np.invert(mask) + img_filtered*mask
+
+        mask = result1 == 0
+        still_blank = np.any(mask)
+        i = 0
+        while still_blank and i<100:
+            result1 = Image.fromarray(result1)
+            img_filtered = np.array(result1.filter(ImageFilter.MedianFilter(size=11)))
+            result1 = result1*np.invert(mask) + img_filtered*mask
+
+            i += 1
+
+            mask = result1==0
+            still_blank = np.any(mask)
+        img[b:-b, b:-b] = result1
+        return img
+
+
+
+
+
+
+
