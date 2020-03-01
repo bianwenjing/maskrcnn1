@@ -277,7 +277,8 @@ class ORIG(torch.nn.Module):
         self.loss_evaluator = make_whole_depth_loss_evaluator(cfg)
 
 
-    def forward(self, x, targets = None):
+    def forward(self, x, targets = None, images = None):
+        print('$$$$$$$$$$$$$', x)
         x = self.feature_extractor(x)
         x = self.predictor(x)
         if x.shape[0]==1:  # batch size = 1 sometimes
@@ -291,10 +292,11 @@ class ORIG(torch.nn.Module):
         return x, dict(whole_depth_loss=loss)
 
 
-
 def whole_depth(cfg, in_channels):
     model_option = cfg.MODEL.WHOLE_DEPTH.MODEL_OPTION
+    loss_option = cfg.MODEL.WHOLE_DEPTH.LOSS
     if model_option == 'DORN':
         return DORN(cfg,in_channels)
     elif model_option == 'ORIG':
         return ORIG(cfg, in_channels)
+

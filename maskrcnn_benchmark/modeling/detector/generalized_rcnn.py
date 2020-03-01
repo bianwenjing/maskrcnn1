@@ -35,9 +35,12 @@ class GeneralizedRCNN(nn.Module):
         self.roi_heads = build_roi_heads(cfg, self.backbone.out_channels)
         self.whole_depth_on = cfg.MODEL.WHOLE_DEPTH_ON
         self.FPN_RES = cfg.MODEL.BACKBONE.CONV_BODY
+        self.whole_depth_model = cfg.MODEL.WHOLE_DEPTH.MODEL_OPTION
+        self.whole_depth_loss_option = cfg.MODEL.WHOLE_DEPTH.LOSS
+        self.depth_loss_option = cfg.MODEL.ROI_DEPTH_HEAD.LOSS
         ###################################################################################
         if self.whole_depth_on:
-            self.whole_depth = whole_depth(cfg, 1)
+            self.whole_depth = whole_depth(cfg, 1024)
         #####################################################################################
     def forward(self, images, targets=None):
         """
@@ -63,15 +66,20 @@ class GeneralizedRCNN(nn.Module):
         # print('!!!!!!!!!!!!!!!!!', resnet_output.shape) (2,2048,25,34)
         proposals, proposal_losses = self.rpn(images, features, targets)
         if self.roi_heads:
-            x, result, detector_losses = self.roi_heads(features, proposals, targets)
-
+            if self.depth_loss_option == 'adaptive':
+                x, result, detector_losses = self.roi_heads(features, proposals, targets, images)
+            else:
+                x, result, detector_losses = self.roi_heads(features, proposals, targets)
         else:
             # RPN-only models don't have roi_heads
             x = features
             result = proposals
             detector_losses = {}
         if self.whole_depth_on:
-            x_depth, whole_depth_loss = self.whole_depth(resnet_output, targets)
+            if self.whole_depth_loss_option == 'adaptive' and self.whole_depth_model == 'ORIG':
+                x_depth, whole_depth_loss = self.whole_depth(resnet_output, targets, images)
+            else:
+                x_depth, whole_depth_loss = self.whole_depth(resnet_output, targets)
         if self.training:
             losses = {}
             losses.update(detector_losses)

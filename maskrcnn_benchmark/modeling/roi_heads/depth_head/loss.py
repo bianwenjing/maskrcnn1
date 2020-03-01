@@ -114,7 +114,7 @@ class MaskRCNNLossComputation(object):
         # return labels, maps, masks, focal_i[0]
         return labels, maps, masks
 
-    def __call__(self, proposals, depth_logits, targets):
+    def __call__(self, proposals, depth_logits, targets, images=None):
         """
         Arguments:
             proposals (list[BoxList])
@@ -150,9 +150,9 @@ class MaskRCNNLossComputation(object):
         if self.model_name == 'MSE':
             depth_loss = F.mse_loss(depth_pred, depth_targets)
         elif self.model_name == 'berhu':
-            depth_loss = self.berhu_loss(depth_pred, depth_targets, focal_i)
+            depth_loss = self.berhu_loss(depth_pred, depth_targets)
         elif self.model_name == 'adaptive':
-            depth_loss = self.adaptive_loss(depth_pred, depth_targets, focal_i, p1 = 0.5, p2 = 0.5)
+            depth_loss = self.adaptive_loss(depth_pred, depth_targets, images)
         ########################################################
         #########################################################
         # valid_mask = (mask_targets > 0).detach()
@@ -162,38 +162,52 @@ class MaskRCNNLossComputation(object):
         # depth_loss = depth_diff.square().mean()
         ##########################################################
         return depth_loss
-    def berhu_loss(self, depth_pred, depth_targets, focal_i):
-        focal_0 = 577
-        s=focal_0/focal_i[0]
+    # def berhu_loss(self, depth_pred, depth_targets, focal_i):
+    #     focal_0 = 577
+    #     s=focal_0/focal_i[0]
+    #
+    #     depth_pred = s * depth_pred  # normalise
+    #     depth_targets = s * depth_targets
+    #
+    #     thre = torch.max(torch.abs(depth_pred - depth_targets))   #FCRN
+    #     thre = 0.2 * thre
+    #     valid_mask = (depth_targets > 0).detach()
+    #     diff = depth_targets - depth_pred
+    #     diff = diff[valid_mask]
+    #     diff = diff.abs()
+    #
+    #     huber_mask = (diff > thre).detach()
+    #     diff2 = diff[huber_mask]
+    #     diff2 = diff2 ** 2
+    #
+    #     depth_loss = torch.cat((diff, diff2)).mean()
+    #     return depth_loss
 
-        depth_pred = s * depth_pred  # normalise
-        depth_targets = s * depth_targets
+    def berhu(self, pred, target):
+        huber_c = torch.max(pred - target)
+        huber_c = 0.2 * huber_c
 
-        thre = torch.max(torch.abs(depth_pred - depth_targets))   #FCRN
-        thre = 0.2 * thre
-        valid_mask = (depth_targets > 0).detach()
-        diff = depth_targets - depth_pred
-        diff = diff[valid_mask]
-        diff = diff.abs()
+        diff = (target - pred).abs()
 
-        huber_mask = (diff > thre).detach()
-        diff2 = diff[huber_mask]
-        diff2 = diff2 ** 2
+        huber_mask = (diff > huber_c).detach()
+        huber_mask_inverse = (diff <= huber_c).detach()
+        diff = diff[huber_mask_inverse]
+        diff2 = (diff[huber_mask] ** 2 + huber_c) / (2 * huber_c)
 
-        depth_loss = torch.cat((diff, diff2)).mean()
-        return depth_loss
+        loss = torch.cat((diff, diff2)).mean()
 
-    def grad_loss(self, depth_pred, depth_targets):
-        img_grad = self.gradient(depth_targets)   # not sure (different symbol used on paper)
-        pred_grad = self.gradient(depth_pred)
-        l = pred_grad * np.exp(img_grad)
-        return l
-
-    def adaptive_loss(self, depth_pred, depth_targets, focal_i, p1, p2):
-        loss = p1 * self.berhu_loss(depth_pred, depth_targets, focal_i) + p2 * self.grad_loss(depth_pred, depth_targets)
         return loss
 
+    def adaptive_loss(self, pred, target, image):
+        p1 = 1
+        p2 = 0.1
 
+        loss = p1 * self.berhu(pred, target) + p2 * self.grad_loss(pred, image)
+
+    def grad_loss(self, pred, image):
+        img_grad = self.gradient(image)
+        pred_gradient = self.gradient(pred)
+        return torch.from_numpy(pred_gradient * np.exp(img_grad))
 
     def gradient(self, img_gray):
         gx = np.gradient(img_gray, axis=0)

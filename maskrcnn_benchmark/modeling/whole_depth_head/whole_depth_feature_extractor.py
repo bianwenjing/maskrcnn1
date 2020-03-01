@@ -6,12 +6,12 @@ from maskrcnn_benchmark.modeling import registry
 from maskrcnn_benchmark.modeling.poolers import Pooler
 from maskrcnn_benchmark.modeling.make_layers import make_conv3x3
 
-registry.WHOLE_DEPTH_FEATURE_EXTRACTORS.register(
-    "RES", ResNet50Conv5ROIFeatureExtractor
-)
+# registry.WHOLE_DEPTH_FEATURE_EXTRACTORS.register(
+#     "RES", ResNet50Conv5ROIFeatureExtractor
+# )
 
 
-@registry.WHOLE_DEPTH_FEATURE_EXTRACTORS.register("FPN")
+@registry.WHOLE_DEPTH_FEATURE_EXTRACTORS.register("RES")
 class MaskRCNNFPNFeatureExtractor(nn.Module):
     """
     Heads for FPN for classification

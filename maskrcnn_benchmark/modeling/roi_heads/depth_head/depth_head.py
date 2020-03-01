@@ -45,7 +45,7 @@ class ROIDepthHead(nn.Module):
         #     param.requires_grad = False
         #####################################################
 
-    def forward(self, features, proposals, targets=None):
+    def forward(self, features, proposals, targets=None, images = None):
         """
         Arguments:
             features (list[Tensor]): feature-maps from possibly several levels
@@ -83,7 +83,7 @@ class ROIDepthHead(nn.Module):
             return x, result, {}
         # print('@@@@@@@@@@@@@@@@@@@', depth_logits)
 
-        loss_depth = self.loss_evaluator(proposals, depth_logits, targets)
+        loss_depth = self.loss_evaluator(proposals, depth_logits, targets, images)
         # loss_depth = self.loss_evaluator(targets, depth_logits, targets)
         return x, all_proposals, dict(loss_depth=loss_depth)
 
