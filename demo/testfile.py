@@ -17,8 +17,8 @@ from maskrcnn_benchmark.data.datasets.mydataset import ScanNetDataset
 # this makes our figures bigger
 pylab.rcParams['figure.figsize'] = 20, 12
 
-# config_file = "../configs/caffe2/e2e_mask_rcnn_R_50_FPN_1x_caffe2.yaml"
-config_file = "../configs/caffe2/channel_r50_c4.yaml"
+config_file = "../configs/caffe2/e2e_mask_rcnn_R_50_FPN_1x_caffe2.yaml"
+# config_file = "../configs/caffe2/channel_r50_c4.yaml"
 
 # update the config options with the config file
 cfg.merge_from_file(config_file)
@@ -43,7 +43,7 @@ def colored_depthmap(depth, d_min=None, d_max=None):
 
 OBJECT_DEPTH = False
 WHOLE_DEPTH = False
-SEG_GROUND = False
+SEG_GROUND = True
 
 if SEG_GROUND:
     anno = '/home/wenjing/storage/anno/ground_train_resize.txt'

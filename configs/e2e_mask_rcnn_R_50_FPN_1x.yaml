@@ -45,23 +45,23 @@ MODEL:
     RESOLUTION: 28
 #    RESOLUTION: 56
     SHARE_BOX_FEATURE_EXTRACTOR: False
+    LOSS: 'berhu'
   WHOLE_DEPTH:
 #    MODEL_OPTION: 'DORN'
     MODEL_OPTION: 'ORIG'
     FEATURE_EXTRACTOR: 'FPN'
     PREDICTOR: 'MaskRCNNC4Predictor'
+    LOSS: 'berhu'
   TENSORBOARD: True
   MASK_ON: True
   DEPTH_ON: False
-  WHOLE_DEPTH_ON: False
+  WHOLE_DEPTH_ON: True
 
   FREEZE_BOX_MASK: False
   FREEZE_FPN: True
   FREEZE_RPN: True
-#  MODEL_OPTION: 0
+
 DATASETS:
-#  TRAIN: ("coco_2014_train", "coco_2014_valminusminival")
-#  TEST: ("coco_2014_minival",)
   TRAIN: ("ScanNet_train",)
   TEST: ("ScanNet_val",)
 DATALOADER:

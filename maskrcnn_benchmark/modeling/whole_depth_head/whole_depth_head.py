@@ -278,16 +278,8 @@ class ORIG(torch.nn.Module):
 
 
     def forward(self, x, targets = None):
-        # x = self.pooler(x, proposals)
-
-        for layer_name in self.blocks:
-            x = F.relu(getattr(self, layer_name)(x))
-        ###########################################
-        x = self.conv5_depth(x)
-        # self.depth = self.conv5_depth(x)
-        # x = self.depth
-        x = self.depth_fcn_logits(x)
-        # x=self.conv6_depth(x)
+        x = self.feature_extractor(x)
+        x = self.predictor(x)
         if x.shape[0]==1:  # batch size = 1 sometimes
             x = x[0]
         else:

@@ -44,7 +44,7 @@ def project_masks_on_boxes(segmentation_masks, proposals, discretization_size):
 
 
 class MaskRCNNLossComputation(object):
-    def __init__(self, proposal_matcher, discretization_size):
+    def __init__(self, proposal_matcher, discretization_size, model_name):
         """
         Arguments:
             proposal_matcher (Matcher)
@@ -52,6 +52,7 @@ class MaskRCNNLossComputation(object):
         """
         self.proposal_matcher = proposal_matcher
         self.discretization_size = discretization_size
+        self.model_name = model_name
 
     def match_targets_to_proposals(self, proposal, target):
         match_quality_matrix = boxlist_iou(target, proposal)
@@ -145,9 +146,13 @@ class MaskRCNNLossComputation(object):
         ######################################################
         depth_pred = depth_logits[positive_inds, labels_pos] * mask_targets
         depth_targets = depth_targets * mask_targets
-        depth_loss = F.mse_loss(depth_pred, depth_targets)
-        # depth_loss = self.berhu_loss(depth_pred, depth_targets, focal_i)
-        # depth_loss = self.adaptive_loss(depth_pred, depth_targets, focal_i, p1 = 0.5, p2 = 0.5)
+
+        if self.model_name == 'MSE':
+            depth_loss = F.mse_loss(depth_pred, depth_targets)
+        elif self.model_name == 'berhu':
+            depth_loss = self.berhu_loss(depth_pred, depth_targets, focal_i)
+        elif self.model_name == 'adaptive':
+            depth_loss = self.adaptive_loss(depth_pred, depth_targets, focal_i, p1 = 0.5, p2 = 0.5)
         ########################################################
         #########################################################
         # valid_mask = (mask_targets > 0).detach()
@@ -205,7 +210,7 @@ def make_roi_depth_loss_evaluator(cfg):
     )
 
     loss_evaluator = MaskRCNNLossComputation(
-        matcher, cfg.MODEL.ROI_DEPTH_HEAD.RESOLUTION
+        matcher, cfg.MODEL.ROI_DEPTH_HEAD.RESOLUTION, cfg.MODEL.ROI_DEPTH_HEAD.LOSS
     )
 
     return loss_evaluator

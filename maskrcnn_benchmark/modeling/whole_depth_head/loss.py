@@ -65,6 +65,9 @@ class DORN_LOSS(object):
         return self.loss
 
 class ORIG_LOSS(object):
+    def __init__(self, model_name):
+        self.model_name = model_name
+
     def __call__(self, pred, targets):
         depth_targets = []
         w = pred.shape[1]
@@ -82,8 +85,31 @@ class ORIG_LOSS(object):
         for depth_target in depth_targets:
             depth_targets_tensor = torch.stack((depth_targets_tensor, depth_target))
         depth_targets_tensor = depth_targets_tensor.cuda().float()
-        loss = F.mse_loss(pred, depth_targets_tensor)
+        #################only positive depth as target#################
+        valid_mask = (depth_targets_tensor > 0).detach()
+        depth_targets_tensor = depth_targets_tensor[valid_mask]
+        pred = pred[valid_mask]
+        ##################################
+        if self.model_name == 'adaptive':
+            loss = F.mse_loss(pred, depth_targets_tensor)
+        elif self.model_name == 'berhu':
+            loss = self.berhu(pred, depth_targets_tensor)
+        else:
+            loss = F.mse_loss(pred, depth_targets_tensor)
         return loss
+    def berhu(self, pred, target):
+        huber_c = torch.max(pred - target)
+        huber_c = 0.2 * huber_c
+
+        diff = (target - pred).abs()
+
+        huber_mask = (diff > huber_c).detach()
+        diff2 = diff[huber_mask]
+
+        loss = torch.cat((diff, diff2)).mean()
+
+        return loss
+
 
 
 
@@ -91,7 +117,7 @@ def make_whole_depth_loss_evaluator(cfg):
     # loss_type = cfg.MODEL.WHOLE_DEPTH.LOSS
     model_option = cfg.MODEL.WHOLE_DEPTH.MODEL_OPTION
     if model_option == 'ORIG':
-        loss_evaluator = ORIG_LOSS()
+        loss_evaluator = ORIG_LOSS(cfg.MODEL.WHOLE_DEPTH.LOSS)
     elif model_option == 'DORN':
         loss_evaluator = DORN_LOSS()
     return loss_evaluator
