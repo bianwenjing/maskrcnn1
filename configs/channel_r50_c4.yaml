@@ -5,7 +5,7 @@ MODEL:
 #  WEIGHT: "/home/wenjing/.torch/models/e2e_mask_rcnn_R_50_C4_1x.pth"
   BACKBONE:
 #    CONV_BODY: "R-50-FPN"
-    FREEZE_CONV_BODY_AT: 3
+    FREEZE_CONV_BODY_AT: 4
 
 #  RESNETS:
 #    BACKBONE_OUT_CHANNELS: 256
@@ -47,19 +47,21 @@ MODEL:
     RESOLUTION: 28
     CONV_LAYERS: (1024, 1024, 1024, 1024)
     SHARE_BOX_FEATURE_EXTRACTOR: True
+    LOSS: 'berhu'
   WHOLE_DEPTH:
     MODEL_OPTION: 'ORIG'
     FEATURE_EXTRACTOR: 'RES'
     PREDICTOR: 'MaskRCNNC4Predictor'
+    LOSS: 'adaptive'
 
-  TENSORBOARD: True
+  TENSORBOARD: False
   MASK_ON: True
   DEPTH_ON: False
-  WHOLE_DEPTH_ON: False
+  WHOLE_DEPTH_ON: True
 
-  FREEZE_BOX_MASK: False
+  FREEZE_BOX_MASK: True
 #  FREEZE_FPN: False
-  FREEZE_RPN: False
+  FREEZE_RPN: True
 #  MODEL_OPTION: 0
 DATASETS:
   TRAIN: ("ScanNet_train",)

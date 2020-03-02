@@ -278,7 +278,9 @@ class ORIG(torch.nn.Module):
 
 
     def forward(self, x, targets = None, images = None):
-        print('$$$$$$$$$$$$$', x)
+        # print('$$$$$$$$$$$$$', len(x), x[0].shape)  #(2, 2048, 25, 34) fpn
+        if isinstance(x, list):  #for res50 x[0] is (2, 1024, 50, 67)
+            x = x[0]
         x = self.feature_extractor(x)
         x = self.predictor(x)
         if x.shape[0]==1:  # batch size = 1 sometimes
@@ -287,7 +289,7 @@ class ORIG(torch.nn.Module):
             x = torch.squeeze(x)
         if not self.training:
             return x, {}
-        loss = self.loss_evaluator(x, targets)
+        loss = self.loss_evaluator(x, targets, images)
 
         return x, dict(whole_depth_loss=loss)
 

@@ -65,9 +65,10 @@ class GeneralizedRCNN(nn.Module):
             resnet_output = features
         # print('!!!!!!!!!!!!!!!!!', resnet_output.shape) (2,2048,25,34)
         proposals, proposal_losses = self.rpn(images, features, targets)
+        # print('£££££££££££', images.tensors.shape) (2,3,800,1088)
         if self.roi_heads:
             if self.depth_loss_option == 'adaptive':
-                x, result, detector_losses = self.roi_heads(features, proposals, targets, images)
+                x, result, detector_losses = self.roi_heads(features, proposals, targets, images.tensors)
             else:
                 x, result, detector_losses = self.roi_heads(features, proposals, targets)
         else:
@@ -77,7 +78,7 @@ class GeneralizedRCNN(nn.Module):
             detector_losses = {}
         if self.whole_depth_on:
             if self.whole_depth_loss_option == 'adaptive' and self.whole_depth_model == 'ORIG':
-                x_depth, whole_depth_loss = self.whole_depth(resnet_output, targets, images)
+                x_depth, whole_depth_loss = self.whole_depth(resnet_output, targets, images.tensors)
             else:
                 x_depth, whole_depth_loss = self.whole_depth(resnet_output, targets)
         if self.training:

@@ -12,6 +12,7 @@ from maskrcnn_benchmark.modeling.make_layers import make_conv3x3
 
 
 @registry.WHOLE_DEPTH_FEATURE_EXTRACTORS.register("RES")
+@registry.WHOLE_DEPTH_FEATURE_EXTRACTORS.register("FPN")
 class MaskRCNNFPNFeatureExtractor(nn.Module):
     """
     Heads for FPN for classification

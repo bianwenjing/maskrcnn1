@@ -7,6 +7,7 @@ from maskrcnn_benchmark.modeling.matcher import Matcher
 from maskrcnn_benchmark.structures.boxlist_ops import boxlist_iou
 from maskrcnn_benchmark.modeling.utils import cat
 import numpy as np
+import torchvision.transforms as trans
 
 def project_masks_on_boxes(segmentation_masks, proposals, discretization_size):
     """
@@ -68,14 +69,16 @@ class MaskRCNNLossComputation(object):
         matched_targets.add_field("matched_idxs", matched_idxs)
         return matched_targets
 
-    def prepare_targets(self, proposals, targets):
+    def prepare_targets(self, proposals, targets, images=None):
         labels = []
         maps = []
         masks=[]
+        masked_images = []
         for proposals_per_image, targets_per_image in zip(proposals, targets):
             matched_targets = self.match_targets_to_proposals(
                 proposals_per_image, targets_per_image
             )
+
             matched_idxs = matched_targets.get_field("matched_idxs")
 
             labels_per_image = matched_targets.get_field("labels")
@@ -105,7 +108,9 @@ class MaskRCNNLossComputation(object):
             masks_per_image = project_masks_on_boxes(
                 segmentation_masks, positive_proposals, self.discretization_size
             )
+            masked_images_per_image = project_masks_on_boxes(images, positive_proposals, self.discretization_size)
             # maps_per_image=maps_per_image * masks_per_image # apply segmentation mask to extract object from background
+
 
             labels.append(labels_per_image)
             maps.append(maps_per_image)
@@ -124,9 +129,10 @@ class MaskRCNNLossComputation(object):
         Return:
             mask_loss (Tensor): scalar tensor containing the loss
         """
+        images = images
 
         # labels, depth_targets, mask_targets, focal_i = self.prepare_targets(proposals, targets)
-        labels, depth_targets, mask_targets = self.prepare_targets(proposals, targets)
+        labels, depth_targets, mask_targets = self.prepare_targets(proposals, targets, images)
          # len(depth_targets) batch size
 
         labels = cat(labels, dim=0)
@@ -140,48 +146,33 @@ class MaskRCNNLossComputation(object):
         if depth_targets.numel() == 0:
             return depth_logits.sum() * 0
 
-        # depth_loss = F.binary_cross_entropy_with_logits(
-        #     depth_logits[positive_inds, labels_pos], depth_targets
-        # )
         ######################################################
         depth_pred = depth_logits[positive_inds, labels_pos] * mask_targets
         depth_targets = depth_targets * mask_targets
-
+        valid_mask = (depth_targets > 0).detach()
+        depth_targets_vector = depth_targets[valid_mask]
+        depth_pred_vector = depth_pred[valid_mask]
         if self.model_name == 'MSE':
-            depth_loss = F.mse_loss(depth_pred, depth_targets)
+            depth_loss = F.mse_loss(depth_pred_vector, depth_targets_vector)
         elif self.model_name == 'berhu':
-            depth_loss = self.berhu_loss(depth_pred, depth_targets)
+            depth_loss = self.berhu(depth_pred_vector, depth_targets_vector)
         elif self.model_name == 'adaptive':
-            depth_loss = self.adaptive_loss(depth_pred, depth_targets, images)
-        ########################################################
-        #########################################################
-        # valid_mask = (mask_targets > 0).detach()
-        # depth_pred = depth_logits[positive_inds, labels_pos]
-        # depth_diff = depth_pred - depth_targets
-        # depth_diff = depth_diff[valid_mask]
-        # depth_loss = depth_diff.square().mean()
-        ##########################################################
+            ####################resize image and change to grayscale#############################
+            images = images.cpu().detach()
+            depth_pred = depth_pred.cpu().detach()
+            tensor_to_pil = trans.ToPILImage()
+            pil_to_tensor = trans.ToTensor()
+            pred_size = (depth_pred.shape[2], depth_pred.shape[1])
+            images_resized = tensor_to_pil(images[0]).resize(pred_size).convert('L') # convert to grayscale
+            images_resized = pil_to_tensor(images_resized)[0]  # (1, 50, 68) -> (50, 68)
+            batch = images.shape[0]
+            for i in range(1, batch):
+                image = tensor_to_pil(images[i]).resize(pred_size).convert('L')
+                image = pil_to_tensor(image)[0]
+                images = torch.stack((images_resized, image))
+            ###########################################################################
+            depth_loss = self.adaptive_loss(depth_pred_vector, depth_targets_vector, depth_pred, images)
         return depth_loss
-    # def berhu_loss(self, depth_pred, depth_targets, focal_i):
-    #     focal_0 = 577
-    #     s=focal_0/focal_i[0]
-    #
-    #     depth_pred = s * depth_pred  # normalise
-    #     depth_targets = s * depth_targets
-    #
-    #     thre = torch.max(torch.abs(depth_pred - depth_targets))   #FCRN
-    #     thre = 0.2 * thre
-    #     valid_mask = (depth_targets > 0).detach()
-    #     diff = depth_targets - depth_pred
-    #     diff = diff[valid_mask]
-    #     diff = diff.abs()
-    #
-    #     huber_mask = (diff > thre).detach()
-    #     diff2 = diff[huber_mask]
-    #     diff2 = diff2 ** 2
-    #
-    #     depth_loss = torch.cat((diff, diff2)).mean()
-    #     return depth_loss
 
     def berhu(self, pred, target):
         huber_c = torch.max(pred - target)
@@ -191,27 +182,31 @@ class MaskRCNNLossComputation(object):
 
         huber_mask = (diff > huber_c).detach()
         huber_mask_inverse = (diff <= huber_c).detach()
-        diff = diff[huber_mask_inverse]
+        diff1 = diff[huber_mask_inverse]
         diff2 = (diff[huber_mask] ** 2 + huber_c) / (2 * huber_c)
 
-        loss = torch.cat((diff, diff2)).mean()
+        loss = torch.cat((diff1, diff2)).mean()
 
         return loss
 
-    def adaptive_loss(self, pred, target, image):
+    def adaptive_loss(self, pred_vector, target_vector, pred, images):
         p1 = 1
         p2 = 0.1
-
-        loss = p1 * self.berhu(pred, target) + p2 * self.grad_loss(pred, image)
+        loss = p1 * self.berhu(pred_vector, target_vector) + p2 * self.grad_loss(pred, images)
+        return loss
 
     def grad_loss(self, pred, image):
+        print("pred ", pred.device)
+        print("image", image.device)
         img_grad = self.gradient(image)
         pred_gradient = self.gradient(pred)
-        return torch.from_numpy(pred_gradient * np.exp(img_grad))
+        loss = np.sum(np.absolute(pred_gradient * np.exp(-np.square(img_grad))))
+        print('££££££££££££££££££', loss)
+        return loss
 
     def gradient(self, img_gray):
-        gx = np.gradient(img_gray, axis=0)
-        gy = np.gradient(img_gray, axis=1)
+        gx = np.gradient(img_gray.numpy(), axis=1)
+        gy = np.gradient(img_gray, axis=2)
         g = gx * gx + gy * gy
         return np.sqrt(g)
 

@@ -1,6 +1,9 @@
 import torch
 import torch.nn.functional as F
 import numpy as np
+from PIL import Image
+import torchvision.transforms as trans
+
 class DORN_LOSS(object):
     def __call__(self, ord_labels, target):
         """
@@ -69,7 +72,7 @@ class ORIG_LOSS(object):
     def __init__(self, model_name):
         self.model_name = model_name
 
-    def __call__(self, pred, targets, images):
+    def __call__(self, pred, targets, images = None):
         depth_targets = []
         w = pred.shape[1]
         h = pred.shape[2]
@@ -77,7 +80,6 @@ class ORIG_LOSS(object):
             box = box.get_field("depth").resize((h, w)).get_mask_tensor()
             if len(box.shape)==3:
                 box = torch.squeeze(box[0])
-            # print('$$$$$$$$$$$$$$$$', box.shape)
             depth_targets.append(box)
 
         depth_targets_tensor = depth_targets[0]
@@ -88,15 +90,29 @@ class ORIG_LOSS(object):
         depth_targets_tensor = depth_targets_tensor.cuda().float()
         #################only positive depth as target#################
         valid_mask = (depth_targets_tensor > 0).detach()
-        depth_targets_tensor = depth_targets_tensor[valid_mask]
-        pred = pred[valid_mask]
+        depth_targets_tensor_vector = depth_targets_tensor[valid_mask]
+        pred_vector = pred[valid_mask]
         ##################################
         if self.model_name == 'berhu':
-            loss = self.berhu(pred, depth_targets_tensor)
+            loss = self.berhu(pred_vector, depth_targets_tensor_vector)
         elif self.model_name == 'adaptive':
-            loss = self.adaptive_loss((pred, depth_targets_tensor, images))
+            ####################resize image and change to grayscale#############################
+            images = images.cpu().detach()
+            pred = pred.cpu().detach()
+            tensor_to_pil = trans.ToPILImage()
+            pil_to_tensor = trans.ToTensor()
+            pred_size = (pred.shape[2], pred.shape[1])
+            images_resized = tensor_to_pil(images[0]).resize(pred_size).convert('L')
+            images_resized = pil_to_tensor(images_resized)[0]  # (1, 50, 68) -> (50, 68)
+            batch = images.shape[0]
+            for i in range(1, batch):
+                image = tensor_to_pil(images[i]).resize(pred_size).convert('L')
+                image = pil_to_tensor(image)[0]
+                images = torch.stack((images_resized, image))
+            ###########################################################################
+            loss = self.adaptive_loss(pred_vector, depth_targets_tensor_vector, pred, images)
         else:
-            loss = F.mse_loss(pred, depth_targets_tensor)
+            loss = F.mse_loss(pred_vector, depth_targets_tensor_vector)
         return loss
 
     def berhu(self, pred, target):
@@ -107,87 +123,31 @@ class ORIG_LOSS(object):
 
         huber_mask = (diff > huber_c).detach()
         huber_mask_inverse = (diff <= huber_c).detach()
-        diff = diff[huber_mask_inverse]
+        diff1 = diff[huber_mask_inverse]
         diff2 = (diff[huber_mask]**2 + huber_c)/ (2*huber_c)
 
-        loss = torch.cat((diff, diff2)).mean()
+        loss = torch.cat((diff1, diff2)).mean()
 
         return loss
 
-    def adaptive_loss(self, pred, target, image):
+    def adaptive_loss(self, pred_vector, target_vector, pred, images):
         p1 = 1
         p2 = 0.1
-
-        loss = p1 * self.berhu(pred, target) + p2 * self.grad_loss(pred, image)
+        loss = p1 * self.berhu(pred_vector, target_vector) + p2 * self.grad_loss(pred, images)
+        return loss
 
     def grad_loss(self, pred, image):
         img_grad = self.gradient(image)
         pred_gradient = self.gradient(pred)
-        return torch.from_numpy(pred_gradient * np.exp(img_grad))
-
-    def gradient(self, img_gray):
-        gx = np.gradient(img_gray, axis=0)
-        gy = np.gradient(img_gray, axis=1)
-        g = gx * gx + gy * gy
-        return np.sqrt(g)
-
-class MONO_LOSS(object):
-    def __call__(self, pred, targets, image):
-        depth_targets = []
-        w = pred.shape[1]
-        h = pred.shape[2]
-        for box in targets:
-            box = box.get_field("depth").resize((h, w)).get_mask_tensor()
-            if len(box.shape)==3:
-                box = torch.squeeze(box[0])
-            # print('$$$$$$$$$$$$$$$$', box.shape)
-            depth_targets.append(box)
-
-        depth_targets_tensor = depth_targets[0]
-
-        depth_targets.pop(0)
-        for depth_target in depth_targets:
-            depth_targets_tensor = torch.stack((depth_targets_tensor, depth_target))
-        depth_targets_tensor = depth_targets_tensor.cuda().float()
-        #################only positive depth as target#################
-        valid_mask = (depth_targets_tensor > 0).detach()
-        depth_targets_tensor = depth_targets_tensor[valid_mask]
-        pred = pred[valid_mask]
-        ###################################
-        loss = self.adaptive_loss(pred, depth_targets_tensor, image)
+        loss = np.sum(np.absolute(pred_gradient * np.exp(-np.square(img_grad))))
+        print('££££££££££££££££££', loss)
         return loss
 
-    def adaptive_loss(self, pred, target, image):
-        p1 = 1
-        p2 = 0.1
-
-        loss = p1 * self.berhu(pred, target) + p2 * self.grad_loss(pred, image)
-
-    def grad_loss(self, pred, image):
-        img_grad = self.gradient(image)
-        pred_gradient = self.gradient(pred)
-        return torch.from_numpy(pred_gradient * np.exp(img_grad))
-
     def gradient(self, img_gray):
-        gx = np.gradient(img_gray, axis=0)
-        gy = np.gradient(img_gray, axis=1)
+        gx = np.gradient(img_gray, axis=1)
+        gy = np.gradient(img_gray, axis=2)
         g = gx * gx + gy * gy
         return np.sqrt(g)
-
-    def berhu(self, pred, target):
-        huber_c = torch.max(pred - target)
-        huber_c = 0.2 * huber_c
-
-        diff = (target - pred).abs()
-
-        huber_mask = (diff > huber_c).detach()
-        huber_mask_inverse = (diff <= huber_c).detach()
-        diff = diff[huber_mask_inverse]
-        diff2 = (diff[huber_mask]**2 + huber_c)/ (2*huber_c)
-
-        loss = torch.cat((diff, diff2)).mean()
-
-        return loss
 
 
 def make_whole_depth_loss_evaluator(cfg):

@@ -158,7 +158,6 @@ class ScanNetDataset(CocoDetection2):
             result1 = result1*np.invert(mask) + img_filtered*mask
 
             i += 1
-
             mask = result1==0
             still_blank = np.any(mask)
         img[b:-b, b:-b] = result1
