@@ -104,21 +104,21 @@ class ScanNetDataset(CocoDetection2):
             keypoints = PersonKeypoints(keypoints, img.size)
             target.add_field("keypoints", keypoints)
 ##############################################################################
-        if anno and "depth" in anno[0]:
-            depth_dir = [obj["depth"] for obj in anno]
-            num_obj = len(depth_dir)
-            depth_dir = depth_dir[0]
-            depth_dir = os.path.join(self.PATH_DIR, depth_dir)
-            depth_i = Image.open(depth_dir).resize(self.img_size)   # (1296,968)
-            depth_i = self.preprocess_depth_map(depth_i)
-            depth_i = torch.from_numpy(depth_i)
-            # self.l = []
-            # depth = self.l
-            depth = []
-            for i in range(num_obj):
-                depth.append(depth_i)
-            depth = DepthMap(depth, self.img_size, mode='mask')
-            target.add_field("depth", depth)
+        # if anno and "depth" in anno[0]:
+        #     depth_dir = [obj["depth"] for obj in anno]
+        #     num_obj = len(depth_dir)
+        #     depth_dir = depth_dir[0]
+        #     depth_dir = os.path.join(self.PATH_DIR, depth_dir)
+        #     depth_i = Image.open(depth_dir).resize(self.img_size)   # (1296,968)
+        #     depth_i = self.preprocess_depth_map(depth_i)
+        #     depth_i = torch.from_numpy(depth_i)
+        #     # self.l = []
+        #     # depth = self.l
+        #     depth = []
+        #     for i in range(num_obj):
+        #         depth.append(depth_i)
+        #     depth = DepthMap(depth, self.img_size, mode='mask')
+        #     target.add_field("depth", depth)
 
 ###################################################################################
 ###################################################################################
