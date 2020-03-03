@@ -8,6 +8,7 @@ from maskrcnn_benchmark.structures.boxlist_ops import boxlist_iou
 from maskrcnn_benchmark.modeling.utils import cat
 import numpy as np
 import torchvision.transforms as trans
+from maskrcnn_benchmark.structures.depth_map import DepthMap
 
 def project_masks_on_boxes(segmentation_masks, proposals, discretization_size):
     """
@@ -60,7 +61,10 @@ class MaskRCNNLossComputation(object):
         matched_idxs = self.proposal_matcher(match_quality_matrix)
         # Mask RCNN needs "labels" and "masks "fields for creating the targets
         # target = target.copy_with_fields(["labels", "depth", "masks", "intrinsic"])
-        target = target.copy_with_fields(["labels", "depth", "masks"])
+        if self.model_name == 'adaptive':
+            target = target.copy_with_fields(["labels", "depth", "masks", "gray_img"])
+        else:
+            target = target.copy_with_fields(["labels", "depth", "masks"])
         # get the targets corresponding GT for each proposal
         # NB: need to clamp the indices because we can have a single
         # GT in the image, and matched_idxs can be -2, which goes
@@ -69,7 +73,7 @@ class MaskRCNNLossComputation(object):
         matched_targets.add_field("matched_idxs", matched_idxs)
         return matched_targets
 
-    def prepare_targets(self, proposals, targets, images=None):
+    def prepare_targets(self, proposals, targets):
         labels = []
         maps = []
         masks=[]
@@ -108,7 +112,7 @@ class MaskRCNNLossComputation(object):
             masks_per_image = project_masks_on_boxes(
                 segmentation_masks, positive_proposals, self.discretization_size
             )
-            masked_images_per_image = project_masks_on_boxes(images, positive_proposals, self.discretization_size)
+
             # maps_per_image=maps_per_image * masks_per_image # apply segmentation mask to extract object from background
 
 
@@ -116,10 +120,16 @@ class MaskRCNNLossComputation(object):
             maps.append(maps_per_image)
             masks.append(masks_per_image)
 
-        # return labels, maps, masks, focal_i[0]
-        return labels, maps, masks
+            if self.model_name == 'adaptive':
+                imgs = matched_targets.get_field("gray_img")
+                imgs = imgs[positive_inds]
+                masked_images_per_image = project_masks_on_boxes(imgs, positive_proposals, self.discretization_size)
+                masked_images.append(masked_images_per_image)
 
-    def __call__(self, proposals, depth_logits, targets, images=None):
+        # return labels, maps, masks, focal_i[0]
+        return labels, maps, masks, masked_images
+
+    def __call__(self, proposals, depth_logits, targets):
         """
         Arguments:
             proposals (list[BoxList])
@@ -129,10 +139,18 @@ class MaskRCNNLossComputation(object):
         Return:
             mask_loss (Tensor): scalar tensor containing the loss
         """
-        images = images
-
+        # if images!=None:
+        #     images = images.cpu().detach()
+        #     tensor_to_pil = trans.ToPILImage()
+        #     image_gray = tensor_to_pil(images[0]).convert('L')
+        #     images = [DepthMap(image_gray, (320, 240), mode='mask')]
+        #     batch = images.shape[0]
+        #     for i in range(1, batch):
+        #         image_gray = tensor_to_pil(images[i]).convert('L')
+        #         image = DepthMap(image_gray, (320, 240), mode='mask')
+        #         images.append(image)
         # labels, depth_targets, mask_targets, focal_i = self.prepare_targets(proposals, targets)
-        labels, depth_targets, mask_targets = self.prepare_targets(proposals, targets, images)
+        labels, depth_targets, mask_targets, masked_images = self.prepare_targets(proposals, targets)
          # len(depth_targets) batch size
 
         labels = cat(labels, dim=0)
@@ -158,18 +176,10 @@ class MaskRCNNLossComputation(object):
             depth_loss = self.berhu(depth_pred_vector, depth_targets_vector)
         elif self.model_name == 'adaptive':
             ####################resize image and change to grayscale#############################
-            images = images.cpu().detach()
+            masked_images = cat(masked_images, dim=0)
+            masked_images = masked_images * mask_targets
+            images = masked_images.cpu().detach()
             depth_pred = depth_pred.cpu().detach()
-            tensor_to_pil = trans.ToPILImage()
-            pil_to_tensor = trans.ToTensor()
-            pred_size = (depth_pred.shape[2], depth_pred.shape[1])
-            images_resized = tensor_to_pil(images[0]).resize(pred_size).convert('L') # convert to grayscale
-            images_resized = pil_to_tensor(images_resized)[0]  # (1, 50, 68) -> (50, 68)
-            batch = images.shape[0]
-            for i in range(1, batch):
-                image = tensor_to_pil(images[i]).resize(pred_size).convert('L')
-                image = pil_to_tensor(image)[0]
-                images = torch.stack((images_resized, image))
             ###########################################################################
             depth_loss = self.adaptive_loss(depth_pred_vector, depth_targets_vector, depth_pred, images)
         return depth_loss
@@ -196,8 +206,6 @@ class MaskRCNNLossComputation(object):
         return loss
 
     def grad_loss(self, pred, image):
-        print("pred ", pred.device)
-        print("image", image.device)
         img_grad = self.gradient(image)
         pred_gradient = self.gradient(pred)
         loss = np.sum(np.absolute(pred_gradient * np.exp(-np.square(img_grad))))

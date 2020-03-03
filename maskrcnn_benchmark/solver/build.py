@@ -6,6 +6,7 @@ from .lr_scheduler import WarmupMultiStepLR
 
 def make_optimizer(cfg, model):
     params = []
+    # lr = cfg.SOLVER.BASE_LR
     for key, value in model.named_parameters():
         if value.requires_grad:
             print('isisisi', key)

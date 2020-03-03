@@ -2,10 +2,11 @@ MODEL:
   META_ARCHITECTURE: "GeneralizedRCNN"
   # WEIGHT: "catalog://ImageNetPretrained/MSRA/R-50"
   WEIGHT: "/home/wenjing/storage/result/result_/no_last_layers_res_1024.pth"
+#  WEIGHT: "/home/wenjing/storage/result/result20/model_0390000.pth"
 #  WEIGHT: "/home/wenjing/.torch/models/e2e_mask_rcnn_R_50_C4_1x.pth"
   BACKBONE:
 #    CONV_BODY: "R-50-FPN"
-    FREEZE_CONV_BODY_AT: 3
+    FREEZE_CONV_BODY_AT: 4
 
 #  RESNETS:
 #    BACKBONE_OUT_CHANNELS: 256
@@ -22,12 +23,6 @@ MODEL:
 #  ROI_HEADS:
 #    USE_FPN: True
   ROI_BOX_HEAD:
-#    POOLER_RESOLUTION: 7
-#    POOLER_SCALES: (0.25, 0.125, 0.0625, 0.03125)
-#    POOLER_SAMPLING_RATIO: 2
-#    FEATURE_EXTRACTOR: "FPN2MLPFeatureExtractor"
-#    PREDICTOR: "FPNPredictor"
-#    NUM_CLASSES: 20
     NUM_CLASSES: 550
 #    CONV_HEAD_DIM: 1024
 #  ROI_MASK_HEAD:
@@ -44,10 +39,9 @@ MODEL:
     CONV_LAYERS: (1024, 1024, 1024, 1024)
   ROI_DEPTH_HEAD:
     PREDICTOR: "MaskRCNNC4Predictor"
-    RESOLUTION: 28
     CONV_LAYERS: (1024, 1024, 1024, 1024)
-    SHARE_BOX_FEATURE_EXTRACTOR: True
-    LOSS: 'berhu'
+    SHARE_BOX_FEATURE_EXTRACTOR: False
+    LOSS: 'adaptive'
   WHOLE_DEPTH:
     MODEL_OPTION: 'ORIG'
     FEATURE_EXTRACTOR: 'RES'
@@ -61,7 +55,7 @@ MODEL:
 
   FREEZE_BOX_MASK: False
 #  FREEZE_FPN: False
-  FREEZE_RPN: False
+  FREEZE_RPN: True
 #  MODEL_OPTION: 0
 DATASETS:
   TRAIN: ("ScanNet_train",)

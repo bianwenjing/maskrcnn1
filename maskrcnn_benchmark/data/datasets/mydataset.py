@@ -11,6 +11,8 @@ import numpy as np
 from PIL import ImageFilter
 
 from .torch2.coco2 import CocoDetection2
+from maskrcnn_benchmark.config import cfg
+import torchvision.transforms as trans
 
 min_keypoints_per_image = 10
 
@@ -104,24 +106,43 @@ class ScanNetDataset(CocoDetection2):
             keypoints = PersonKeypoints(keypoints, img.size)
             target.add_field("keypoints", keypoints)
 ##############################################################################
-        # if anno and "depth" in anno[0]:
-        #     depth_dir = [obj["depth"] for obj in anno]
-        #     num_obj = len(depth_dir)
-        #     depth_dir = depth_dir[0]
-        #     depth_dir = os.path.join(self.PATH_DIR, depth_dir)
-        #     depth_i = Image.open(depth_dir).resize(self.img_size)   # (1296,968)
-        #     depth_i = self.preprocess_depth_map(depth_i)
-        #     depth_i = torch.from_numpy(depth_i)
-        #     # self.l = []
-        #     # depth = self.l
-        #     depth = []
-        #     for i in range(num_obj):
-        #         depth.append(depth_i)
-        #     depth = DepthMap(depth, self.img_size, mode='mask')
-        #     target.add_field("depth", depth)
+        pil_to_tensor = trans.ToTensor()
+        if cfg.MODEL.DEPTH_ON or cfg.MODEL.WHOLE_DEPTH_ON:
+            if anno and "depth" in anno[0]:
+                depth_dir = [obj["depth"] for obj in anno]
+                num_obj = len(depth_dir)
+                depth_dir = depth_dir[0]
+                depth_dir = os.path.join(self.PATH_DIR, depth_dir)
+                depth_i = Image.open(depth_dir).resize(self.img_size)   # (1296,968)
+                depth_i = self.preprocess_depth_map(depth_i)
+                depth_i = torch.from_numpy(depth_i)
+                # self.l = []
+                # depth = self.l
+                depth = []
+                for i in range(num_obj):
+                    depth.append(depth_i)
+                depth = DepthMap(depth, self.img_size, mode='mask')
+                target.add_field("depth", depth)
 
 ###################################################################################
 ###################################################################################
+        if cfg.MODEL.WHOLE_DEPTH.LOSS and cfg.MODEL.WHOLE_DEPTH_ON:
+            KEY1= True
+        else:
+            KEY1 = False
+        if cfg.MODEL.ROI_DEPTH_HEAD.LOSS and cfg.MODEL.DEPTH_ON:
+            KEY2 = True
+        else:
+            KEY2 = False
+        if anno and (KEY1 or KEY2):
+            img_gray = img.convert('L')
+            img_gray = pil_to_tensor(img_gray)[0]
+            imgs_gray = []
+            for i in range(num_obj):
+                imgs_gray.append(img_gray)
+            imgs_gray = DepthMap(imgs_gray, self.img_size, mode='mask')
+            target.add_field("gray_img", imgs_gray)
+
         if anno and "intrinsic" in anno[0]:
             intrinsic = [obj["intrinsic"] for obj in anno]
             intrinsic = torch.tensor(intrinsic)

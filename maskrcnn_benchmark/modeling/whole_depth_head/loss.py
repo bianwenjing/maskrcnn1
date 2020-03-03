@@ -72,7 +72,7 @@ class ORIG_LOSS(object):
     def __init__(self, model_name):
         self.model_name = model_name
 
-    def __call__(self, pred, targets, images = None):
+    def __call__(self, pred, targets, images=None):
         depth_targets = []
         w = pred.shape[1]
         h = pred.shape[2]

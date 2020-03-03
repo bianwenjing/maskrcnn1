@@ -21,7 +21,7 @@ class CombinedROIHeads(torch.nn.ModuleDict):
             self.keypoint.feature_extractor = self.box.feature_extractor
         if cfg.MODEL.DEPTH_ON and cfg.MODEL.ROI_DEPTH_HEAD.SHARE_BOX_FEATURE_EXTRACTOR:
             self.depth.feature_extractor = self.box.feature_extractor
-    def forward(self, features, proposals, targets=None, images=None):
+    def forward(self, features, proposals, targets=None):
         losses = {}
         # TODO rename x to roi_box_features, if it doesn't increase memory consumption
         x, detections, loss_box = self.box(features, proposals, targets)
@@ -51,7 +51,7 @@ class CombinedROIHeads(torch.nn.ModuleDict):
                 depth_features = x
             # During training, self.box() will return the unaltered proposals as "detections"
             # this makes the API consistent during training and testing
-            x, detections, loss_depth = self.depth(depth_features, detections, targets, images)
+            x, detections, loss_depth = self.depth(depth_features, detections, targets)
             losses.update(loss_depth)
 
         if self.cfg.MODEL.KEYPOINT_ON:

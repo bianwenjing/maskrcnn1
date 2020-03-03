@@ -68,7 +68,7 @@ class GeneralizedRCNN(nn.Module):
         # print('£££££££££££', images.tensors.shape) (2,3,800,1088)
         if self.roi_heads:
             if self.depth_loss_option == 'adaptive':
-                x, result, detector_losses = self.roi_heads(features, proposals, targets, images.tensors)
+                x, result, detector_losses = self.roi_heads(features, proposals, targets)
             else:
                 x, result, detector_losses = self.roi_heads(features, proposals, targets)
         else:
