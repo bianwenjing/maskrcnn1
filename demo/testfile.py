@@ -44,6 +44,7 @@ def colored_depthmap(depth, d_min=None, d_max=None):
 OBJECT_DEPTH = False
 WHOLE_DEPTH = False
 SEG_GROUND = True
+LABELED = True
 
 if SEG_GROUND:
     anno = '/home/wenjing/storage/anno/ground_train_resize.txt'
@@ -74,6 +75,11 @@ for ii in range(10):
             target.add_field('mask', target_tensor)
             ground_truth = coco_demo.run_on_ground_truth(image, target)
             writer.add_image(str(ii) + 'ground_truth', ground_truth, 0, dataformats='HWC')
+        if LABELED:
+            label = Image.open('/home/wenjing/storage/ScanNetv2/val_scan_label/' + aline[:12]+'/label-filt/' + str(jj) + '.png')
+            label = label.resize((320, 240))
+            label = np.array(label)
+            writer.add_image(str(ii) + 'label', label, 0, dataformats='HW')
         ##########################################################################################################
         ##################################object depth prediction################################################
         if OBJECT_DEPTH:
