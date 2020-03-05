@@ -51,7 +51,22 @@ newdict = _d
 print(newdict['model'].keys())
 
 newdict['model'] = removekey(_d['model'],
-                             ['cls_score.bias', 'cls_score.weight', 'bbox_pred.bias', 'bbox_pred.weight', 'mask_fcn_logits.bias', 'mask_fcn_logits.weight'])
+                             ['cls_score.bias',
+                              'cls_score.weight',
+                              'bbox_pred.bias',
+                              'bbox_pred.weight',
+                              'mask_fcn_logits.bias',
+                              'mask_fcn_logits.weight',
+                              'mask_fcn1.bias',
+                              'mask_fcn1.weight',
+                              'mask_fcn2.bias',
+                              'mask_fcn2.weight'
+                              'mask_fcn3.bias',
+                              'mask_fcn3.weight',
+                              'mask_fcn4.bias',
+                              'mask_fcn4.weight',
+
+                              ])
 
 torch.save(newdict, args.save_path)
 print('saved to {}.'.format(args.save_path))
