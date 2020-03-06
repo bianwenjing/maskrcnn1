@@ -16,8 +16,8 @@ def removekey(d, listofkeys):
 parser = argparse.ArgumentParser(description="Trim Detection weights and save in PyTorch format.")
 parser.add_argument(
     "--pretrained_path",
-    default="~/.torch/models/e2e_mask_rcnn_R_50_C4_1x.pth",
-    # default="~/.torch/models/_detectron_35858933_12_2017_baselines_e2e_mask_rcnn_R-50-FPN_1x.yaml.01_48_14.DzEQe4wC_output_train_coco_2014_train%3Acoco_2014_valminusminival_generalized_rcnn_model_final.pkl",
+    # default="~/.torch/models/e2e_mask_rcnn_R_50_C4_1x.pth",
+    default="~/.torch/models/_detectron_35858933_12_2017_baselines_e2e_mask_rcnn_R-50-FPN_1x.yaml.01_48_14.DzEQe4wC_output_train_coco_2014_train%3Acoco_2014_valminusminival_generalized_rcnn_model_final.pkl",
     help="path to detectron pretrained weight(.pkl)",
     type=str,
 )
@@ -41,11 +41,11 @@ args = parser.parse_args()
 DETECTRON_PATH = os.path.expanduser(args.pretrained_path)
 print('detectron path: {}'.format(DETECTRON_PATH))
 
-# cfg.merge_from_file(args.cfg)
+cfg.merge_from_file(args.cfg)
 
-_d = torch.load(DETECTRON_PATH, map_location=torch.device('cpu'))
+# _d = torch.load(DETECTRON_PATH, map_location=torch.device('cpu'))
 
-# _d = load_c2_format(cfg, DETECTRON_PATH)
+_d = load_c2_format(cfg, DETECTRON_PATH)
 newdict = _d
 
 print(newdict['model'].keys())

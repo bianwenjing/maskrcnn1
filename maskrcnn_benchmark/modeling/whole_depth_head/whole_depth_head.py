@@ -296,7 +296,6 @@ class ORIG(torch.nn.Module):
 
 def whole_depth(cfg, in_channels):
     model_option = cfg.MODEL.WHOLE_DEPTH.MODEL_OPTION
-    loss_option = cfg.MODEL.WHOLE_DEPTH.LOSS
     if model_option == 'DORN':
         return DORN(cfg,in_channels)
     elif model_option == 'ORIG':

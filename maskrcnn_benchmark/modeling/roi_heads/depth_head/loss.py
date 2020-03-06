@@ -139,17 +139,6 @@ class MaskRCNNLossComputation(object):
         Return:
             mask_loss (Tensor): scalar tensor containing the loss
         """
-        # if images!=None:
-        #     images = images.cpu().detach()
-        #     tensor_to_pil = trans.ToPILImage()
-        #     image_gray = tensor_to_pil(images[0]).convert('L')
-        #     images = [DepthMap(image_gray, (320, 240), mode='mask')]
-        #     batch = images.shape[0]
-        #     for i in range(1, batch):
-        #         image_gray = tensor_to_pil(images[i]).convert('L')
-        #         image = DepthMap(image_gray, (320, 240), mode='mask')
-        #         images.append(image)
-        # labels, depth_targets, mask_targets, focal_i = self.prepare_targets(proposals, targets)
         labels, depth_targets, mask_targets, masked_images = self.prepare_targets(proposals, targets)
          # len(depth_targets) batch size
 
