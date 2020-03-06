@@ -93,6 +93,7 @@ class ORIG_LOSS(object):
         depth_targets_tensor_vector = depth_targets_tensor[valid_mask]
         pred_vector = pred[valid_mask]
         ##################################
+        pred_vector = pred_vector + 2000
         if self.model_name == 'berhu':
             loss = self.berhu(pred_vector, depth_targets_tensor_vector)
         elif self.model_name == 'adaptive':
@@ -111,9 +112,27 @@ class ORIG_LOSS(object):
                 images = torch.stack((images_resized, image))
             ###########################################################################
             loss = self.adaptive_loss(pred_vector, depth_targets_tensor_vector, pred, images)
+        elif self.model_name == 'scale_invariant':
+            loss = self.sale_invariant(pred_vector, depth_targets_tensor_vector)
         else:
             loss = F.mse_loss(pred_vector, depth_targets_tensor_vector)
         return loss
+
+    def compute_valid_depth_mask(d1, d2=None):
+        """Computes the mask of valid values for one or two depth maps
+
+        Returns a valid mask that only selects values that are valid depth value
+        in both depth maps (if d2 is given).
+        Valid depth values are >0 and finite.
+        """
+        if d2 is None:
+            valid_mask = np.isfinite(d1)
+            valid_mask[valid_mask] = (d1[valid_mask] > 0)
+        else:
+            valid_mask = np.isfinite(d1) & np.isfinite(d2)
+            valid_mask[valid_mask] = (d1[valid_mask] > 0) & (d2[valid_mask] > 0)
+        return valid_mask
+
 
     def berhu(self, pred, target):
         huber_c = torch.max(pred - target)
@@ -148,6 +167,17 @@ class ORIG_LOSS(object):
         gy = np.gradient(img_gray, axis=2)
         g = gx * gx + gy * gy
         return np.sqrt(g)
+
+    def sale_invariant(self, pred, target):
+        assert (np.all(np.isfinite(depth1) & np.isfinite(depth2) & (depth1 > 0) & (depth2 > 0)))
+        log_diff = np.log(depth1) - np.log(depth2)
+        num_pixels = float(log_diff.size)
+
+        loss = np.sqrt(np.sum(np.square(log_diff)) / num_pixels - np.square(np.sum(log_diff)) / np.square(num_pixels))
+        return loss
+
+
+
 
 
 def make_whole_depth_loss_evaluator(cfg):
