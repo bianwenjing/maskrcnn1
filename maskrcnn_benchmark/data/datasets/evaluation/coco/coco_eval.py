@@ -543,8 +543,10 @@ class COCOResults(object):
             "ARl@1000",
         ],
         "keypoints": ["AP", "AP50", "AP75", "APm", "APl"],
-        "depth": ["abs_rel", "sq_rel", "rmse", "rmse_log", "log10_mean", "a1", "a2", "a3"],
-        "whole_depth": ["abs_rel", "sq_rel", "rmse", "rmse_log", "log10_mean", "a1", "a2", "a3"]
+        # "depth": ["abs_rel", "sq_rel", "rmse", "rmse_log", "log10_mean", "a1", "a2", "a3"],
+        # "whole_depth": ["abs_rel", "sq_rel", "rmse", "rmse_log", "log10_mean", "a1", "a2", "a3"]
+        "depth": ["abs_rel", "imae", "irmse", "log_mae", "rmse_log", "mae", "rmse", "scale_invar", "sq_rel"],
+        "whole_depth": ["abs_rel", "imae", "irmse", "log_mae", "rmse_log", "mae", "rmse", "scale_invar", "sq_rel"]
     }
 
     def __init__(self, *iou_types):

@@ -1,8 +1,8 @@
 MODEL:
   META_ARCHITECTURE: "GeneralizedRCNN"
   # WEIGHT: "catalog://ImageNetPretrained/MSRA/R-50"
-  WEIGHT: "/home/wenjing/storage/result/result_/no_last_layers_res_1024.pth"
-#  WEIGHT: "/home/wenjing/storage/result/result20/model_0390000.pth"
+#  WEIGHT: "/home/wenjing/storage/result/result_/no_last_layers_res_1024.pth"
+  WEIGHT: "/home/wenjing/storage/result/result_/model_1440000_result20.pth"
 #  WEIGHT: "/home/wenjing/.torch/models/e2e_mask_rcnn_R_50_C4_1x.pth"
   BACKBONE:
 #    CONV_BODY: "R-50-FPN"
@@ -37,9 +37,11 @@ MODEL:
     PREDICTOR: "MaskRCNNC4Predictor"
     SHARE_BOX_FEATURE_EXTRACTOR: True
     CONV_LAYERS: (1024, 1024, 1024, 1024)
+#    CONV_LAYERS: (2048, 2048, 2048, 2048)
   ROI_DEPTH_HEAD:
     PREDICTOR: "MaskRCNNC4Predictor"
     CONV_LAYERS: (1024, 1024, 1024, 1024)
+#    CONV_LAYERS: (2048, 2048, 2048, 2048)
     SHARE_BOX_FEATURE_EXTRACTOR: False
     LOSS: 'adaptive'
   WHOLE_DEPTH:
@@ -48,10 +50,12 @@ MODEL:
     PREDICTOR: 'MaskRCNNC4Predictor'
     LOSS: 'adaptive'
 
-  TENSORBOARD: False
+  TENSORBOARD: True
+
   MASK_ON: True
   DEPTH_ON: True
   WHOLE_DEPTH_ON: True
+  PREPROCESS: False
 
   FREEZE_BOX_MASK: True
 #  FREEZE_FPN: False

@@ -93,7 +93,8 @@ class ORIG_LOSS(object):
         depth_targets_tensor_vector = depth_targets_tensor[valid_mask]
         pred_vector = pred[valid_mask]
         ##################################
-        pred_vector = pred_vector + 2000
+        # pred_vector = pred_vector + 0.2
+        depth_targets_tensor_vector = self.depth_normalise(depth_targets_tensor_vector)
         if self.model_name == 'berhu':
             loss = self.berhu(pred_vector, depth_targets_tensor_vector)
         elif self.model_name == 'adaptive':
@@ -135,7 +136,7 @@ class ORIG_LOSS(object):
 
 
     def berhu(self, pred, target):
-        huber_c = torch.max(pred - target)
+        huber_c = torch.max(pred - target).abs()
         huber_c = 0.2 * huber_c
 
         diff = (target - pred).abs()
@@ -146,7 +147,6 @@ class ORIG_LOSS(object):
         diff2 = (diff[huber_mask]**2 + huber_c)/ (2*huber_c)
 
         loss = torch.cat((diff1, diff2)).mean()
-
         return loss
 
     def adaptive_loss(self, pred_vector, target_vector, pred, images):
@@ -159,7 +159,6 @@ class ORIG_LOSS(object):
         img_grad = self.gradient(image)
         pred_gradient = self.gradient(pred)
         loss = np.sum(np.absolute(pred_gradient * np.exp(-np.square(img_grad))))
-        print('££££££££££££££££££', loss)
         return loss
 
     def gradient(self, img_gray):
@@ -175,6 +174,11 @@ class ORIG_LOSS(object):
 
         loss = np.sqrt(np.sum(np.square(log_diff)) / num_pixels - np.square(np.sum(log_diff)) / np.square(num_pixels))
         return loss
+    def depth_normalise(self, target):
+        # max = torch.max(torch.max(pred), torch.max(target))
+        max = 10000
+        target = target/max
+        return target
 
 
 

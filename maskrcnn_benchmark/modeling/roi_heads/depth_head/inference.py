@@ -146,7 +146,7 @@ def paste_mask_in_image(mask, box, im_h, im_w, padding=1):
     #     # allow it to return an unmodified mask
     #     mask = (mask * 255).to(torch.bool)
     #
-    im_mask = torch.zeros((im_h, im_w), dtype=torch.int32)
+    im_mask = torch.zeros((im_h, im_w), dtype=torch.float32)
     # im_mask = torch.zeros((im_h, im_w))
     x_0 = max(box[0], 0)
     x_1 = min(box[2] + 1, im_w)

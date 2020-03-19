@@ -179,12 +179,9 @@ class DEPTHeval(COCOeval):
         depth_g = Image.open('/home/wenjing/storage/ScanNetv2/' + g[0]).resize((width, height))
         depth_g = np.array(depth_g)
 
-        # remove zeros to avoid divide by zero
-        mask1 = depth_d != 0
-        mask2 = depth_g != 0
-        mask = mask1*mask2
-        depth_g = depth_g[mask]
-        depth_d = depth_d[mask]
+        valid_mask = (depth_d > 0) & (depth_g> 0)  # (depth_d!=0) # negative predicted values
+        depth_d = depth_d[valid_mask]
+        depth_g = depth_g[valid_mask]
 
         thresh = np.maximum((depth_g / depth_d), (depth_d / depth_g))
         a1 = (thresh < 1.25).mean()
@@ -195,7 +192,6 @@ class DEPTHeval(COCOeval):
         mse = np.mean(np.square(abs_diff))
         rmse = np.sqrt(mse)
 
-        # print('£££££££££££££££££££££', np.unique(depth_d))
         mse_log = (np.log(depth_g) - np.log(depth_d)) ** 2
         rmse_log = np.sqrt(mse_log.mean())
 
@@ -209,9 +205,9 @@ class DEPTHeval(COCOeval):
 
         inv_output = 1 / depth_d
         inv_target = 1 / depth_g
-        abs_inv_diff = (inv_output - inv_target).abs()
-        imae = float(abs_inv_diff.mean())
-        irmse = math.sqrt((np.power(abs_inv_diff, 2)).mean())
+        abs_inv_diff = np.abs((inv_output - inv_target))
+        imae = np.mean(abs_inv_diff.mean())
+        irmse = np.sqrt(np.mean(np.power(abs_inv_diff, 2)))
         mae = np.mean(abs_diff)
         log_diff = np.log(depth_g) - np.log(depth_d)
         log_mae = np.mean(np.abs(log_diff))
@@ -245,21 +241,18 @@ class DEPTHeval(COCOeval):
             raise Exception('unknown iouType for iou computation')
         depth_g_ = Image.open('/home/wenjing/storage/ScanNetv2/' + g[0]).resize((320, 240))
         depth_g_ = np.array(depth_g_)
-        # depth_g.shape (968,1296)
 
         depth_d = np.zeros((240,320))
         for d_part in d:
-            mask = depth_d==0
+            # mask = depth_d==0
             depth_i = Image.open(d_part)
             depth_i = np.array(depth_i)
-            # depth_d = np.maximum(depth_d, depth_i)
-            depth_d += depth_i * mask
+            depth_d += depth_i
 
-        depth_g_[(depth_d==0)]=0
+        valid_mask = (depth_d>0) & (depth_g_>0)  #(depth_d!=0) # negative predicted values
+        depth_d = depth_d[valid_mask]
+        depth_g = depth_g_[valid_mask]
 
-        #remove zeros to avoid divide by zero
-        depth_g = depth_g_[depth_g_ != 0]
-        depth_d = depth_d[depth_g_ != 0]
 
         thresh = np.maximum((depth_g/depth_d), (depth_d/depth_g))
         a1 = (thresh < 1.25).mean()
@@ -284,9 +277,9 @@ class DEPTHeval(COCOeval):
 
         inv_output = 1 / depth_d
         inv_target = 1 / depth_g
-        abs_inv_diff = (inv_output - inv_target).abs()
-        imae = float(abs_inv_diff.mean())
-        irmse = math.sqrt((np.power(abs_inv_diff, 2)).mean())
+        abs_inv_diff = np.abs((inv_output - inv_target))
+        imae = np.mean(abs_inv_diff)
+        irmse = np.sqrt(np.mean(np.power(abs_inv_diff, 2)))
         mae = np.mean(abs_diff)
         log_diff = np.log(depth_g) - np.log(depth_d)
         log_mae = np.mean(np.abs(log_diff))
@@ -404,8 +397,8 @@ class DEPTHeval(COCOeval):
             return stats
 
         def _summarize_Depth():
-            stats = np.zeros((8,))
-            for i in range(8):
+            stats = np.zeros((9,))
+            for i in range(9):
                 stats[i] = self.mean_error[i]
             return stats
 

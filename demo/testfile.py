@@ -13,12 +13,12 @@ from torch.utils.tensorboard import SummaryWriter
 import os
 import torch
 from maskrcnn_benchmark.data.datasets.mydataset import ScanNetDataset
-
+from PIL import ImageFilter
 # this makes our figures bigger
 pylab.rcParams['figure.figsize'] = 20, 12
 
-config_file = "../configs/caffe2/e2e_mask_rcnn_R_50_FPN_1x_caffe2.yaml"
-# config_file = "../configs/caffe2/channel_r50_c4.yaml"
+# config_file = "../configs/caffe2/e2e_mask_rcnn_R_50_FPN_1x_caffe2.yaml"
+config_file = "../configs/caffe2/channel_r50_c4.yaml"
 
 # update the config options with the config file
 cfg.merge_from_file(config_file)
@@ -39,12 +39,34 @@ def colored_depthmap(depth, d_min=None, d_max=None):
     depth_relative = (depth - d_min) / (d_max - d_min)
 #     return 255 * cmap(depth_relative)[:, :, :3]  # H, W, C
     return 255*depth_relative
+def preprocess_depth_map(img):
+    b = 9
+    img = np.array(img)
+    img_cut = img[b:-b, b:-b]
+    img_cut = Image.fromarray(img_cut)
 
+    img_filtered = np.array(img_cut.filter(ImageFilter.MedianFilter(size=17)))
+    mask = img_cut == 0
+    result1 = img_cut * np.invert(mask) + img_filtered * mask
 
-OBJECT_DEPTH = False
-WHOLE_DEPTH = False
+    mask = result1 == 0
+    still_blank = np.any(mask)
+    i = 0
+    while still_blank and i < 100:
+        result1 = Image.fromarray(result1)
+        img_filtered = np.array(result1.filter(ImageFilter.MedianFilter(size=11)))
+        result1 = result1 * np.invert(mask) + img_filtered * mask
+
+        i += 1
+        mask = result1 == 0
+        still_blank = np.any(mask)
+    img[b:-b, b:-b] = result1
+    return img
+
+OBJECT_DEPTH = True
+WHOLE_DEPTH = True
 SEG_GROUND = True
-LABELED = True
+LABELED = False
 
 if SEG_GROUND:
     anno = '/home/wenjing/storage/anno/ground_train_resize.txt'
@@ -82,37 +104,38 @@ for ii in range(10):
             writer.add_image(str(ii) + 'label', label, 0, dataformats='HW')
         ##########################################################################################################
         ##################################object depth prediction################################################
-        if OBJECT_DEPTH:
-            depth_pred = coco_demo.run_on_opencv_image(image, depth='object')
-            depth_pred = depth_pred[0]
-            depth_pred[depth_pred < 0] = 0
-            depth_pred = np.uint32(depth_pred)
-            # np.save('/home/wenjing/dep.npy', depth_pred)
-            # predictions = torch.from_numpy(predictions)
-            # depth_pred = depth_pred[:, :, [1, 2, 0]]
-            # depth_pred[depth_pred<0] = 0
-            # depth_pred = np.uint8(depth_pred)
-            # print(np.unique(depth_pred))
-            # depth_pred = Image.fromarray(depth_pred)
-            # depth_pred.save("/home/wenjing/image.png", "PNG")
-
+        # if OBJECT_DEPTH:
+        #     depth_pred = coco_demo.run_on_opencv_image(image, depth='object')
+        #     depth_pred = depth_pred[0]
+        #     depth_pred[depth_pred < 0] = 0
+        #     depth_pred = np.uint32(depth_pred)
         ####################################################################################################
         ###################################depth ground truth###########################################
         if OBJECT_DEPTH or WHOLE_DEPTH:
             depth_target = Image.open(
                 '/home/wenjing/storage/ScanNetv2/val_scan_depth/' + aline[:12] + '/depth/' + str(jj) + '.png')
             depth_target = depth_target.resize((320, 240))
-            depth_target = np.array(depth_target)
+            depth_target = preprocess_depth_map(depth_target)
+            # depth_target = np.array(depth_target)
         if OBJECT_DEPTH:
+            depth_pred = coco_demo.run_on_opencv_image(image, depth='object')
+            depth_pred = depth_pred[0]
+            depth_pred[depth_pred < 0] = 0
+            depth_pred = np.uint32(depth_pred)
+            mask = depth_pred!=0
+
+
             d_min = min(np.min(depth_pred), np.min(depth_target))
             d_max = max(np.max(depth_pred), np.max(depth_target))
+            # print('#####',d_min,d_max)
             depth_target_scaled = colored_depthmap(depth_target, d_min, d_max)
             depth_pred_scaled = colored_depthmap(depth_pred, d_min, d_max)
+            # print('%%%%%%%%%%', depth_pred_scaled)
             save_path_pred = '/home/wenjing/test1/' + str(ii) + '_pred.png'
             plt.imsave(save_path_pred, depth_pred_scaled)
             depth_pred_scaled = Image.open(save_path_pred)
             depth_pred_scaled = np.array(depth_pred_scaled)
-
+            # print('@@@@@',depth_pred_scaled)
             save_path_target = '/home/wenjing/test1/' + str(ii) + '_target.png'
             plt.imsave(save_path_target, depth_target_scaled)
             depth_target_scaled = Image.open(save_path_target)
@@ -125,28 +148,40 @@ for ii in range(10):
         if WHOLE_DEPTH:
             whole_depth_pred = coco_demo.run_on_opencv_image(image, depth='whole')
             whole_depth_pred = whole_depth_pred[0]
-            # print('£££££££££££', whole_depth_pred.shape)
             whole_depth_pred[whole_depth_pred < 0] = 0
             whole_depth_pred = np.uint32(whole_depth_pred)
+
         ####################################################################################################
         ###################################depth ground truth2 ###########################################
             d_min = min(np.min(whole_depth_pred), np.min(depth_target))
+            # d_min = np.min(whole_depth_pred)
             d_max = max(np.max(whole_depth_pred), np.max(depth_target))
             depth_target_scaled = colored_depthmap(depth_target, d_min, d_max)
             whole_depth_pred_scaled = colored_depthmap(whole_depth_pred, d_min, d_max)
+            print('#######', whole_depth_pred_scaled)
+            whole_depth_pred_scaled[0][0] = 200
+            whole_depth_pred_scaled[0][1] = 200
+            print('@@@@@@@@', whole_depth_pred_scaled)
+
+
             save_path_pred = '/home/wenjing/test1/' + str(ii) + '_pred_whole.png'
             plt.imsave(save_path_pred, whole_depth_pred_scaled)
-            depth_pred_scaled = Image.open(save_path_pred)
-            depth_pred_scaled = np.array(depth_pred_scaled)
+            whole_depth_pred_scaled = Image.open(save_path_pred)
+            whole_depth_pred_scaled = np.array(whole_depth_pred_scaled)
+            print('$$$$$$$$', whole_depth_pred_scaled.shape, whole_depth_pred_scaled)
 
             save_path_target = '/home/wenjing/test1/' + str(ii) + '_target_whole.png'
             plt.imsave(save_path_target, depth_target_scaled)
             depth_target_scaled = Image.open(save_path_target)
             depth_target_scaled = np.array(depth_target_scaled)
+            print('^^^^^^^^^^^', depth_target_scaled)
+
             writer.add_image(str(ii) + 'whole_depth_ground', depth_target_scaled, 0, dataformats='HWC')
-            writer.add_image(str(ii) + 'whole_depth', depth_pred_scaled, 0, dataformats='HWC')
+            writer.add_image(str(ii) + 'whole_depth', whole_depth_pred_scaled, 0, dataformats='HWC')
 
 writer.close()
 f.close()
+
+
 
 

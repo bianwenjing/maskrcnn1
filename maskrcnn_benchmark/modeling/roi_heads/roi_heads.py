@@ -25,7 +25,10 @@ class CombinedROIHeads(torch.nn.ModuleDict):
         losses = {}
         # TODO rename x to roi_box_features, if it doesn't increase memory consumption
         x, detections, loss_box = self.box(features, proposals, targets)
-        losses.update(loss_box)
+        ##############################
+        if not self.cfg.MODEL.FREEZE_BOX_MASK:
+            losses.update(loss_box)
+        ###############################
         if self.cfg.MODEL.MASK_ON:
             mask_features = features
             # optimization: during training, if we share the feature extractor between
@@ -38,7 +41,10 @@ class CombinedROIHeads(torch.nn.ModuleDict):
             # During training, self.box() will return the unaltered proposals as "detections"
             # this makes the API consistent during training and testing
             x, detections, loss_mask = self.mask(mask_features, detections, targets)
-            losses.update(loss_mask)
+            ##################################
+            if not self.cfg.MODEL.FREEZE_BOX_MASK:
+                losses.update(loss_mask)
+            ############################
 
         if self.cfg.MODEL.DEPTH_ON:
             depth_features = features
@@ -76,7 +82,7 @@ def build_roi_heads(cfg, in_channels):
     roi_heads = []
     if cfg.MODEL.RETINANET_ON:
         return []
-
+    # if not cfg.MODEL.FREEZE_BOX_MASK:
     if not cfg.MODEL.RPN_ONLY:
         roi_heads.append(("box", build_roi_box_head(cfg, in_channels)))
     if cfg.MODEL.MASK_ON:

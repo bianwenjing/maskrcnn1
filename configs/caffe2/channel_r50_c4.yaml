@@ -1,7 +1,7 @@
 MODEL:
   META_ARCHITECTURE: "GeneralizedRCNN"
 #  WEIGHT: "/home/wenjing/result3/model_final.pth"
-  WEIGHT: "/home/wenjing/storage/result/result20/model_0470000.pth"
+  WEIGHT: "/home/wenjing/storage/result/result24/model_0050000.pth"
 
   ROI_BOX_HEAD:
     NUM_CLASSES: 550
@@ -16,10 +16,11 @@ MODEL:
 #    POOLER_RESOLUTION: 14
 #    POOLER_SAMPLING_RATIO: 2
     RESOLUTION: 28
-    SHARE_BOX_FEATURE_EXTRACTOR: True
+    SHARE_BOX_FEATURE_EXTRACTOR: False
   MASK_ON: True
-  DEPTH_ON: False
-  WHOLE_DEPTH_ON: False
+  DEPTH_ON: True
+  WHOLE_DEPTH_ON: True
+  FREEZE_BOX_MASK: False
 DATASETS:
   # TEST: ("coco_2014_minival",)
   TEST: ("ScanNet_test",)

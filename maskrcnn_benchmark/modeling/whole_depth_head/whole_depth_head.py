@@ -288,7 +288,7 @@ class ORIG(torch.nn.Module):
         else:
             x = torch.squeeze(x)
         if not self.training:
-            return x, {}
+            return x*10000, {}
         loss = self.loss_evaluator(x, targets, images)
 
         return x, dict(whole_depth_loss=loss)

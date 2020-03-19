@@ -28,8 +28,8 @@ class MaskRCNNC4Predictor(nn.Module):
 
     def forward(self, x):
         x = F.relu(self.conv5_mask(x))
-        # return self.mask_fcn_logits(x)
-        return F.relu(self.mask_fcn_logits(x))
+        return self.mask_fcn_logits(x)
+        # return F.relu(self.mask_fcn_logits(x))
 
 
 @registry.WHOLE_DEPTH_PREDICTOR.register("MaskRCNNConv1x1Predictor")

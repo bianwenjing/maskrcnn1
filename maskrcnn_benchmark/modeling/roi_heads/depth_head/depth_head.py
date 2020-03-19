@@ -78,8 +78,8 @@ class ROIDepthHead(nn.Module):
         # depth_logits shape (# of proposals, 20 classes, 28, 28)
 
         if not self.training:
+            depth_logits = depth_logits*10000
             result = self.post_processor(depth_logits, proposals)
-            #result: boxlist
             return x, result, {}
         # print('@@@@@@@@@@@@@@@@@@@', depth_logits)
 

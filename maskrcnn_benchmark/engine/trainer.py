@@ -94,7 +94,8 @@ def do_train(
 
         losses = sum(loss for loss in loss_dict.values())
 
-
+        print('depth loss:', loss_dict['loss_depth'])
+        print('whole depth loss', loss_dict['whole_depth_loss'])
         # writer.add_scalar('classifier loss',loss_dict['loss_classifier'], iteration)
         # writer.add_scalar('box reg loss', loss_dict['loss_box_reg'], iteration)
         # writer.add_scalar('mask loss', loss_dict['loss_mask'], iteration)
@@ -143,12 +144,12 @@ def do_train(
                 )
             )
             if cfg.MODEL.TENSORBOARD == True:
-                writer.add_scalar('classifier loss', loss_dict['loss_classifier'], iteration)
-                writer.add_scalar('box reg loss', loss_dict['loss_box_reg'], iteration)
-                writer.add_scalar('objectness loss', loss_dict['loss_objectness'], iteration)
-                writer.add_scalar('rpn box reg loss', loss_dict['loss_rpn_box_reg'], iteration)
+                # writer.add_scalar('objectness loss', loss_dict['loss_objectness'], iteration)
+                # writer.add_scalar('rpn box reg loss', loss_dict['loss_rpn_box_reg'], iteration)
                 writer.add_scalar('lr', optimizer.param_groups[0]["lr"], iteration)
-                if cfg.MODEL.MASK_ON:
+                if not cfg.MODEL.FREEZE_BOX_MASK:
+                    writer.add_scalar('classifier loss', loss_dict['loss_classifier'], iteration)
+                    writer.add_scalar('box reg loss', loss_dict['loss_box_reg'], iteration)
                     writer.add_scalar('mask loss', loss_dict['loss_mask'], iteration)
                 if cfg.MODEL.DEPTH_ON:
                     writer.add_scalar('depth loss', loss_dict['loss_depth'], iteration)

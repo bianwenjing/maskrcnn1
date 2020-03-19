@@ -79,6 +79,7 @@ class ROIMaskHead(torch.nn.Module):
 
         if not self.training:
             result = self.post_processor(mask_logits, proposals)
+
             return x, result, {}
         # print('mask_logits@######################',mask_logits)
 

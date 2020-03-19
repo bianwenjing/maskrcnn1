@@ -201,6 +201,7 @@ class ResNetHead(nn.Module):
 
     def forward(self, x):
         for stage in self.stages:
+            # print('###########', x.shape)
             x = getattr(self, stage)(x)
         return x
 

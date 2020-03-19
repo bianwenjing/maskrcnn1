@@ -156,7 +156,8 @@ class DatasetCatalog(object):
         "ScanNet_val": {
             "img_dir": "/home/wenjing/storage/ScanNetv2/val_scan",
             # "ann_dir": "/home/wenjing/storage/anno/val_git_many_549.txt"
-            "ann_dir": "/home/wenjing/storage/anno/val_resize_many.txt"
+            # "ann_dir": "/home/wenjing/storage/anno/val_resize_many.txt"
+            "ann_dir": "/home/wenjing/storage/anno/val_resize.txt"
 
         },
         "ScanNet_test":{

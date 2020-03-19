@@ -235,9 +235,7 @@ class COCODemo(object):
         height, width = original_image.shape[:-1]
         prediction = prediction.resize((width, height))
         if self.depth_state == 'whole':
-            # print('***************', whole_depth.shape)
             prediction.add_field("whole_depth", whole_depth)
-
         else:
             if prediction.has_field("mask"):
                 # if we have masks, paste the masks in the right position
@@ -245,7 +243,6 @@ class COCODemo(object):
                 masks = prediction.get_field("mask")
                 # always single image is passed at a time
                 masks = self.masker([masks], [prediction])[0]
-                # print('£££££££££££', masks.shape)
                 prediction.add_field("mask", masks)
             if self.depth_state == 'object':
                 depths = prediction.get_field("depth")

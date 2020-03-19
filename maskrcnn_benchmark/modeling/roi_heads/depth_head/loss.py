@@ -159,6 +159,10 @@ class MaskRCNNLossComputation(object):
         valid_mask = (depth_targets > 0).detach()
         depth_targets_vector = depth_targets[valid_mask]
         depth_pred_vector = depth_pred[valid_mask]
+        # print('$$$$$$$$$', torch.mean(depth_pred_vector))
+        # print(depth_targets_vector.mean(), depth_pred_vector.mean())
+        # depth_pred_vector = depth_pred_vector + 0.2
+        depth_targets_vector = self.depth_normalise(depth_targets_vector)
         if self.model_name == 'MSE':
             depth_loss = F.mse_loss(depth_pred_vector, depth_targets_vector)
         elif self.model_name == 'berhu':
@@ -174,7 +178,7 @@ class MaskRCNNLossComputation(object):
         return depth_loss
 
     def berhu(self, pred, target):
-        huber_c = torch.max(pred - target)
+        huber_c = torch.max(pred - target).abs()
         huber_c = 0.2 * huber_c
 
         diff = (target - pred).abs()
@@ -198,7 +202,7 @@ class MaskRCNNLossComputation(object):
         img_grad = self.gradient(image)
         pred_gradient = self.gradient(pred)
         loss = np.sum(np.absolute(pred_gradient * np.exp(-np.square(img_grad))))
-        print('££££££££££££££££££', loss)
+        # print('££££££££££££££££££', loss)
         return loss
 
     def gradient(self, img_gray):
@@ -206,6 +210,13 @@ class MaskRCNNLossComputation(object):
         gy = np.gradient(img_gray, axis=2)
         g = gx * gx + gy * gy
         return np.sqrt(g)
+
+    def depth_normalise(self,target):
+        # max = torch.max(torch.max(pred), torch.max(target))
+        max = 10000
+        target = target/max
+        return target
+
 
 
 def make_roi_depth_loss_evaluator(cfg):
