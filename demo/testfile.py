@@ -158,23 +158,16 @@ for ii in range(10):
             d_max = max(np.max(whole_depth_pred), np.max(depth_target))
             depth_target_scaled = colored_depthmap(depth_target, d_min, d_max)
             whole_depth_pred_scaled = colored_depthmap(whole_depth_pred, d_min, d_max)
-            print('#######', whole_depth_pred_scaled)
-            whole_depth_pred_scaled[0][0] = 200
-            whole_depth_pred_scaled[0][1] = 200
-            print('@@@@@@@@', whole_depth_pred_scaled)
-
 
             save_path_pred = '/home/wenjing/test1/' + str(ii) + '_pred_whole.png'
             plt.imsave(save_path_pred, whole_depth_pred_scaled)
             whole_depth_pred_scaled = Image.open(save_path_pred)
             whole_depth_pred_scaled = np.array(whole_depth_pred_scaled)
-            print('$$$$$$$$', whole_depth_pred_scaled.shape, whole_depth_pred_scaled)
 
             save_path_target = '/home/wenjing/test1/' + str(ii) + '_target_whole.png'
             plt.imsave(save_path_target, depth_target_scaled)
             depth_target_scaled = Image.open(save_path_target)
             depth_target_scaled = np.array(depth_target_scaled)
-            print('^^^^^^^^^^^', depth_target_scaled)
 
             writer.add_image(str(ii) + 'whole_depth_ground', depth_target_scaled, 0, dataformats='HWC')
             writer.add_image(str(ii) + 'whole_depth', whole_depth_pred_scaled, 0, dataformats='HWC')

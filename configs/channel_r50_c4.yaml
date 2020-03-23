@@ -43,12 +43,12 @@ MODEL:
     CONV_LAYERS: (1024, 1024, 1024, 1024)
 #    CONV_LAYERS: (2048, 2048, 2048, 2048)
     SHARE_BOX_FEATURE_EXTRACTOR: False
-    LOSS: 'adaptive'
+    LOSS: 'berhu'
   WHOLE_DEPTH:
     MODEL_OPTION: 'ORIG'
     FEATURE_EXTRACTOR: 'RES'
     PREDICTOR: 'MaskRCNNC4Predictor'
-    LOSS: 'adaptive'
+    LOSS: 'berhu'
 
   TENSORBOARD: True
 

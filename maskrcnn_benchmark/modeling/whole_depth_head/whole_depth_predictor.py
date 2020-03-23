@@ -4,7 +4,7 @@ from torch.nn import functional as F
 from maskrcnn_benchmark.layers import Conv2d
 from maskrcnn_benchmark.layers import ConvTranspose2d
 from maskrcnn_benchmark.modeling import registry
-
+from maskrcnn_benchmark.layers import UpProjModule
 
 @registry.WHOLE_DEPTH_PREDICTOR.register("MaskRCNNC4Predictor")
 class MaskRCNNC4Predictor(nn.Module):
@@ -14,8 +14,9 @@ class MaskRCNNC4Predictor(nn.Module):
         dim_reduced = cfg.MODEL.WHOLE_DEPTH.CONV_LAYERS[-1]
         num_inputs = in_channels
 
-        self.conv5_mask = ConvTranspose2d(num_inputs, dim_reduced, 2, 2, 0)
-        self.mask_fcn_logits = Conv2d(dim_reduced, num_classes, 1, 1, 0)
+        self.conv5_whole_depth = ConvTranspose2d(num_inputs, dim_reduced, 2, 2, 0)
+        # self.conv5_whole_depth = UpProjModule(num_inputs, dim_reduced)
+        self.whole_depth_fcn_logits = Conv2d(dim_reduced, num_classes, 1, 1, 0)
 
         for name, param in self.named_parameters():
             # param.requires_grad = False
@@ -27,8 +28,8 @@ class MaskRCNNC4Predictor(nn.Module):
                 nn.init.kaiming_normal_(param, nonlinearity="relu")
 
     def forward(self, x):
-        x = F.relu(self.conv5_mask(x))
-        return self.mask_fcn_logits(x)
+        x = F.relu(self.conv5_whole_depth(x))
+        return self.whole_depth_fcn_logits(x)
         # return F.relu(self.mask_fcn_logits(x))
 
 
