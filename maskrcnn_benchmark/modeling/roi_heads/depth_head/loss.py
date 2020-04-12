@@ -142,12 +142,12 @@ class MaskRCNNLossComputation(object):
         labels, depth_targets, mask_targets, masked_images = self.prepare_targets(proposals, targets)
          # len(depth_targets) batch size
 
-        labels = cat(labels, dim=0)
-        depth_targets = cat(depth_targets, dim=0)
-        mask_targets = cat(mask_targets, dim=0)
+        labels = cat(labels, dim=0).detach()
+        depth_targets = cat(depth_targets, dim=0).detach()
+        mask_targets = cat(mask_targets, dim=0).detach()
 
-        positive_inds = torch.nonzero(labels > 0).squeeze(1)
-        labels_pos = labels[positive_inds]
+        positive_inds = torch.nonzero(labels > 0).squeeze(1).detach()
+        labels_pos = labels[positive_inds].detach()
         # torch.mean (in binary_cross_entropy_with_logits) doesn't
         # accept empty tensors, so handle it separately
         if depth_targets.numel() == 0:
@@ -159,10 +159,8 @@ class MaskRCNNLossComputation(object):
         valid_mask = (depth_targets > 0).detach()
         depth_targets_vector = depth_targets[valid_mask]
         depth_pred_vector = depth_pred[valid_mask]
-        # print('$$$$$$$$$', torch.mean(depth_pred_vector))
-        # print(depth_targets_vector.mean(), depth_pred_vector.mean())
-        # depth_pred_vector = depth_pred_vector + 0.2
         depth_targets_vector = self.depth_normalise(depth_targets_vector)
+
         if self.model_name == 'MSE':
             depth_loss = F.mse_loss(depth_pred_vector, depth_targets_vector)
         elif self.model_name == 'berhu':
@@ -194,7 +192,7 @@ class MaskRCNNLossComputation(object):
 
     def adaptive_loss(self, pred_vector, target_vector, pred, images):
         p1 = 1
-        p2 = 0.1
+        p2 = 0.001
         loss = p1 * self.berhu(pred_vector, target_vector) + p2 * self.grad_loss(pred, images)
         return loss
 

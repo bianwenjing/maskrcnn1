@@ -203,6 +203,7 @@ class COCODemo(object):
                 return result
             elif depth == 'whole':
                 result = predictions.get_field("whole_depth")
+                # print('##################', result)
                 return result
 
 

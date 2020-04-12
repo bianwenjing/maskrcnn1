@@ -75,6 +75,7 @@ class ScanNetDataset(CocoDetection2):
         self.id_to_img_map = {k: v for k, v in enumerate(self.ids)}
         self._transforms = transforms
 
+        self.PATH_DIR_preprocess = '/home/wenjing/storage/ScanNetv2/preprocess/'
         self.PATH_DIR = '/home/wenjing/storage/ScanNetv2/'
         self.img_size = (320, 240)
 
@@ -112,13 +113,13 @@ class ScanNetDataset(CocoDetection2):
                 depth_dir = [obj["depth"] for obj in anno]
                 num_obj = len(depth_dir)
                 depth_dir = depth_dir[0]
-                depth_dir = os.path.join(self.PATH_DIR, depth_dir)
-                depth_i = Image.open(depth_dir).resize(self.img_size)  # (1296,968)
                 if cfg.MODEL.PREPROCESS:
-                    depth_i = self.preprocess_depth_map(depth_i)
-                    depth_i = torch.from_numpy(depth_i)
+                    depth_dir = os.path.join(self.PATH_DIR_preprocess, depth_dir)
                 else:
-                    depth_i = torch.from_numpy(np.array(depth_i))
+                    depth_dir = os.path.join(self.PATH_DIR, depth_dir)
+                depth_i = Image.open(depth_dir).resize(self.img_size)  # (1296,968)
+                depth_i = torch.from_numpy(np.array(depth_i))
+
                 depth = []
                 for i in range(num_obj):
                     depth.append(depth_i)
@@ -162,29 +163,29 @@ class ScanNetDataset(CocoDetection2):
         img_data = self.coco.imgs[img_id]
         return img_data
 
-    def preprocess_depth_map(self, img):
-        b=9
-        img = np.array(img)
-        img_cut = img[b:-b, b:-b]
-        img_cut = Image.fromarray(img_cut)
-
-        img_filtered = np.array(img_cut.filter(ImageFilter.MedianFilter(size=17)))
-        mask = img_cut == 0
-        result1 = img_cut*np.invert(mask) + img_filtered*mask
-
-        mask = result1 == 0
-        still_blank = np.any(mask)
-        i = 0
-        while still_blank and i<100:
-            result1 = Image.fromarray(result1)
-            img_filtered = np.array(result1.filter(ImageFilter.MedianFilter(size=11)))
-            result1 = result1*np.invert(mask) + img_filtered*mask
-
-            i += 1
-            mask = result1==0
-            still_blank = np.any(mask)
-        img[b:-b, b:-b] = result1
-        return img
+    # def preprocess_depth_map(self, img):
+    #     b=9
+    #     img = np.array(img)
+    #     img_cut = img[b:-b, b:-b]
+    #     img_cut = Image.fromarray(img_cut)
+    #
+    #     img_filtered = np.array(img_cut.filter(ImageFilter.MedianFilter(size=17)))
+    #     mask = img_cut == 0
+    #     result1 = img_cut*np.invert(mask) + img_filtered*mask
+    #
+    #     mask = result1 == 0
+    #     still_blank = np.any(mask)
+    #     i = 0
+    #     while still_blank and i<100:
+    #         result1 = Image.fromarray(result1)
+    #         img_filtered = np.array(result1.filter(ImageFilter.MedianFilter(size=11)))
+    #         result1 = result1*np.invert(mask) + img_filtered*mask
+    #
+    #         i += 1
+    #         mask = result1==0
+    #         still_blank = np.any(mask)
+    #     img[b:-b, b:-b] = result1
+    #     return img
 
 
 

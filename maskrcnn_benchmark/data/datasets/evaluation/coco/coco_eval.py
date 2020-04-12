@@ -102,17 +102,17 @@ def do_coco_evaluation(
 
             results.update(res)
 ############################################################################
-    ############### segmentation inference for each category
-    # res = evaluate_whole_depth_prediction(dataset.coco, coco_results[iou_types], file_path, 'segm')
-    # for catId in dataset.coco.getCatIds():
-    #     res.params.catIds = [catId]
-    #     res.evaluate()
-    #     res.accumulate()
-    #     res.summarize()
-    #     result_one_category.update(res)
-    #     if output_folder:
-    #         name = str(catId) + ".pth"
-    #         torch.save(result_one_category, os.path.join(output_folder, name))
+    ##############  inference for each category
+    res = evaluate_depth_predictions(dataset.coco, coco_results['depth'], file_path, "depth")
+    for catId in dataset.coco.getCatIds():
+        # print('£££££££££££££££££££££££', catId)  # input category id
+        res.params.catIds = [catId]
+        res.evaluate(each_category = True)
+        res.summarize()
+        # result_one_category.update(res)
+        # if output_folder:
+        #     name = str(catId) + ".pth"
+        #     torch.save(result_one_category, os.path.join(output_folder, name))
 #################################################################################
 
     logger.info(results)
@@ -491,20 +491,19 @@ def evaluate_predictions_on_coco(
     coco_eval.accumulate()
     coco_eval.summarize()
 ##############################################################################################
-#for each category
-    # for catId in coco_gt.getCatIds():
-    #     print('£££££££££££££££££££££££',catId) #input category id
-    #     coco_eval.params.catIds = [catId]
-    #     coco_eval.evaluate()
-    #     coco_eval.accumulate()
-    #     coco_eval.summarize()
+# # for each category
+#     for catId in coco_gt.getCatIds():
+#         print('£££££££££££££££££££££££',catId) #input category id
+#         coco_eval.params.catIds = [catId]
+#         coco_eval.evaluate()
+#         coco_eval.accumulate()
+#         coco_eval.summarize()
 
     return coco_eval
 #####################################################################
 def evaluate_depth_predictions(
     coco_gt, coco_results, json_result_file, iou_type="depth"
 ):
-    # print('QQQQQQQQQQQQQQQQQQQQQQQQQQQ',coco_results)
     with open(json_result_file, "w") as f:
         json.dump(coco_results, f)
     print('************json file finished**************')
@@ -513,6 +512,16 @@ def evaluate_depth_predictions(
     coco_eval.evaluate()
     # coco_eval.accumulate()
     coco_eval.summarize()
+    ##############################################################################################
+    # for each category
+    # for catId in coco_gt.getCatIds():
+    #     print('£££££££££££££££££££££££', catId)  # input category id
+    #     coco_eval.params.catIds = [catId]
+    #     coco_eval.evaluate()
+    #     # coco_eval.accumulate()
+    #     coco_eval.summarize()
+
+
     return coco_eval
 
 def evaluate_whole_depth_prediction(

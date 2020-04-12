@@ -75,19 +75,19 @@ class DEPTHeval(COCOeval):
         self.evalImgs = defaultdict(list)  # per-image per-category evaluation results
         self.eval = {}  # accumulated evaluation results
 
-    def evaluate(self):
+    def evaluate(self, each_category=False):
         '''
         Run per image evaluation on given images and store results (a list of dict) in self.evalImgs
         :return: None
         '''
         tic = time.time()
-        print('Running per image evaluation...')
+        # print('Running per image evaluation...')
         p = self.params
         # add backward compatibility if useSegm is specified in params
         if not p.useSegm is None:
             p.iouType = 'segm' if p.useSegm == 1 else 'bbox'
             print('useSegm (deprecated) is not None. Running {} evaluation'.format(p.iouType))
-        print('Evaluate annotation type *{}*'.format(p.iouType))
+        # print('Evaluate annotation type *{}*'.format(p.iouType))
         p.imgIds = list(np.unique(p.imgIds))
         if p.useCats:
             p.catIds = list(np.unique(p.catIds))
@@ -139,8 +139,13 @@ class DEPTHeval(COCOeval):
                     if x != []:
                         error.append(x)
             error = np.asarray(error)
-            self.mean_error = np.mean(error, axis=0)
-            # print('##################', self.mean_error)
+            if len(error.shape) !=2:
+                self.mean_error = np.ones(9)
+            else:
+                self.mean_error = np.mean(error, axis=0)
+                if each_category:
+                    if self.mean_error[0]<0.3:
+                        print('**********',catIds, self.mean_error)
         else:
             evaluateImg = self.evaluateImg
             maxDet = p.maxDets[-1]
@@ -152,7 +157,7 @@ class DEPTHeval(COCOeval):
             self._paramsEval = copy.deepcopy(self.params)
 
         toc = time.time()
-        print('DONE (t={:0.2f}s).'.format(toc - tic))
+        # print('DONE (t={:0.2f}s).'.format(toc - tic))
     def compute_whole_depth_metrics(self, imgId, catId):
         p = self.params
         if p.useCats:
@@ -180,8 +185,10 @@ class DEPTHeval(COCOeval):
         depth_g = np.array(depth_g)
 
         valid_mask = (depth_d > 0) & (depth_g> 0)  # (depth_d!=0) # negative predicted values
+        # valid_mask = (depth_g > 0)
         depth_d = depth_d[valid_mask]
         depth_g = depth_g[valid_mask]
+        depth_d[depth_d>10000] = 10000
 
         thresh = np.maximum((depth_g / depth_d), (depth_d / depth_g))
         a1 = (thresh < 1.25).mean()
@@ -250,9 +257,10 @@ class DEPTHeval(COCOeval):
             depth_d += depth_i
 
         valid_mask = (depth_d>0) & (depth_g_>0)  #(depth_d!=0) # negative predicted values
+        # valid_mask = (depth_g_ > 0)
         depth_d = depth_d[valid_mask]
         depth_g = depth_g_[valid_mask]
-
+        depth_d[depth_d > 10000] = 10000
 
         thresh = np.maximum((depth_g/depth_d), (depth_d/depth_g))
         a1 = (thresh < 1.25).mean()

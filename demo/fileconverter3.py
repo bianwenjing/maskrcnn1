@@ -130,8 +130,8 @@ if __name__ == '__main__':
     # convert(img_path, json_file, mode='train_scan', aa=1201, bb=30)
     # a in range 1,1201
     img_path = '/home/wenjing/storage/ScanNetv2/scannetv2_val.txt'
-    json_file = '/home/wenjing/storage/anno/val_resize.txt'
-    convert(img_path, json_file, mode='val_scan', aa=12, bb=5000)
+    json_file = '/home/wenjing/storage/anno/val_resize_2.txt'
+    convert(img_path, json_file, mode='val_scan', aa=312, bb=3000)
     # img_path = '/home/wenjing/storage/ScanNetv2/scannetv2_val.txt'
     # json_file = '/home/wenjing/storage/anno/ground_train_resize.txt'
     # convert(img_path, json_file, mode='val_scan', aa=10, bb=5000)

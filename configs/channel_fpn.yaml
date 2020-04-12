@@ -44,7 +44,7 @@ MODEL:
     RESOLUTION: 28
 #    RESOLUTION: 56
     SHARE_BOX_FEATURE_EXTRACTOR: False
-    LOSS: 'adaptive'
+    LOSS: 'berhu'
     CONV_LAYERS: (1024, 1024, 1024, 1024)
   WHOLE_DEPTH:
 #    MODEL_OPTION: 'DORN'
@@ -52,7 +52,7 @@ MODEL:
 #    MODEL_OPTION: 'MONO'
     FEATURE_EXTRACTOR: 'FPN'
     PREDICTOR: 'MaskRCNNC4Predictor'
-    LOSS: 'adaptive'
+    LOSS: 'berhu'
   TENSORBOARD: True
   MASK_ON: True
   DEPTH_ON: False

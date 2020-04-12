@@ -151,7 +151,7 @@ class ORIG_LOSS(object):
 
     def adaptive_loss(self, pred_vector, target_vector, pred, images):
         p1 = 1
-        p2 = 0.1
+        p2 = 0.001
         loss = p1 * self.berhu(pred_vector, target_vector) + p2 * self.grad_loss(pred, images)
         return loss
 

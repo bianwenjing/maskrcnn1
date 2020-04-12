@@ -39,30 +39,6 @@ def colored_depthmap(depth, d_min=None, d_max=None):
     depth_relative = (depth - d_min) / (d_max - d_min)
 #     return 255 * cmap(depth_relative)[:, :, :3]  # H, W, C
     return 255*depth_relative
-def preprocess_depth_map(img):
-    b = 9
-    img = np.array(img)
-    img_cut = img[b:-b, b:-b]
-    img_cut = Image.fromarray(img_cut)
-
-    img_filtered = np.array(img_cut.filter(ImageFilter.MedianFilter(size=17)))
-    mask = img_cut == 0
-    result1 = img_cut * np.invert(mask) + img_filtered * mask
-
-    mask = result1 == 0
-    still_blank = np.any(mask)
-    i = 0
-    while still_blank and i < 100:
-        result1 = Image.fromarray(result1)
-        img_filtered = np.array(result1.filter(ImageFilter.MedianFilter(size=11)))
-        result1 = result1 * np.invert(mask) + img_filtered * mask
-
-        i += 1
-        mask = result1 == 0
-        still_blank = np.any(mask)
-    img[b:-b, b:-b] = result1
-    return img
-
 OBJECT_DEPTH = True
 WHOLE_DEPTH = True
 SEG_GROUND = True
@@ -90,7 +66,7 @@ for ii in range(10):
         if SEG_GROUND:
             img, target, idx = a[ii]
             target_tensor = target.get_field('masks').get_mask_tensor()
-            # print('""""""""""""', target_tensor.shape)
+
             if len(target_tensor.shape) == 2:
                 target_tensor = target_tensor[None, :, :]
             target_tensor = target_tensor[:, None, :, :]
@@ -111,23 +87,25 @@ for ii in range(10):
         #     depth_pred = np.uint32(depth_pred)
         ####################################################################################################
         ###################################depth ground truth###########################################
-        if OBJECT_DEPTH or WHOLE_DEPTH:
+        if OBJECT_DEPTH:
             depth_target = Image.open(
                 '/home/wenjing/storage/ScanNetv2/val_scan_depth/' + aline[:12] + '/depth/' + str(jj) + '.png')
             depth_target = depth_target.resize((320, 240))
-            depth_target = preprocess_depth_map(depth_target)
-            # depth_target = np.array(depth_target)
-        if OBJECT_DEPTH:
+            # depth_target = preprocess_depth_map(depth_target)
+            depth_target = np.array(depth_target)
+
+
+            depth_target_max = np.max(depth_target)
             depth_pred = coco_demo.run_on_opencv_image(image, depth='object')
             depth_pred = depth_pred[0]
             depth_pred[depth_pred < 0] = 0
+            # depth_pred[depth_target == 0] = 0
+            # depth_pred[depth_pred > depth_target_max] = 0
             depth_pred = np.uint32(depth_pred)
-            mask = depth_pred!=0
-
 
             d_min = min(np.min(depth_pred), np.min(depth_target))
             d_max = max(np.max(depth_pred), np.max(depth_target))
-            # print('#####',d_min,d_max)
+            # print('%%%%%%%%%%%',d_max, np.max(depth_pred))
             depth_target_scaled = colored_depthmap(depth_target, d_min, d_max)
             depth_pred_scaled = colored_depthmap(depth_pred, d_min, d_max)
             # print('%%%%%%%%%%', depth_pred_scaled)
@@ -146,16 +124,43 @@ for ii in range(10):
         ###############################################################################################
         #################################whole depth##################################################
         if WHOLE_DEPTH:
-            whole_depth_pred = coco_demo.run_on_opencv_image(image, depth='whole')
-            whole_depth_pred = whole_depth_pred[0]
-            whole_depth_pred[whole_depth_pred < 0] = 0
-            whole_depth_pred = np.uint32(whole_depth_pred)
+            depth_target = Image.open(
+                '/home/wenjing/storage/ScanNetv2/val_scan_depth/' + aline[:12] + '/depth/' + str(jj) + '.png')
+            if config_file=="../configs/caffe2/channel_r50_c4.yaml":
+                depth_target = depth_target.resize((134, 100))
+                # depth_target = preprocess_depth_map(depth_target)
+                depth_target = np.array(depth_target)
+                depth_target_max = np.max(depth_target)
+                whole_depth_pred = coco_demo.run_on_opencv_image(image, depth='whole')
+                whole_depth_pred = whole_depth_pred[0]
+                whole_depth_pred[whole_depth_pred < 0] = 0
+                ############################################
+                # whole_depth_pred[depth_target == 0] = 0
+                # whole_depth_pred[whole_depth_pred > depth_target_max] = 0
+                whole_zeros = np.zeros((100, 134))
+                whole_zeros[5:-5, 5:-5] = whole_depth_pred[5:-5, 5:-5]
+                #############################################
+            else:
+                depth_target = depth_target.resize((68, 50))
+                # depth_target = preprocess_depth_map(depth_target)
+                depth_target = np.array(depth_target)
+                depth_target_max = np.max(depth_target)
+                whole_depth_pred = coco_demo.run_on_opencv_image(image, depth='whole')
+                whole_depth_pred = whole_depth_pred[0]
+                whole_depth_pred[whole_depth_pred < 0] = 0
+                ############################################
+                # whole_depth_pred[depth_target == 0] = 0
+                # whole_depth_pred[whole_depth_pred > depth_target_max] = 0
+                whole_zeros = np.zeros((50, 68))
+                whole_zeros[5:-5, 5:-5] = whole_depth_pred[5:-5, 5:-5]
+            whole_depth_pred = np.uint32(whole_zeros)
 
         ####################################################################################################
         ###################################depth ground truth2 ###########################################
+            # print('#############', np.mean(np.abs(whole_depth_pred - depth_target)))
             d_min = min(np.min(whole_depth_pred), np.min(depth_target))
-            # d_min = np.min(whole_depth_pred)
             d_max = max(np.max(whole_depth_pred), np.max(depth_target))
+            print('########', d_max, np.max(whole_depth_pred))
             depth_target_scaled = colored_depthmap(depth_target, d_min, d_max)
             whole_depth_pred_scaled = colored_depthmap(whole_depth_pred, d_min, d_max)
 

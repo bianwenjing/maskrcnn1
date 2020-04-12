@@ -2,7 +2,7 @@ MODEL:
   META_ARCHITECTURE: "GeneralizedRCNN"
   # WEIGHT: "catalog://ImageNetPretrained/MSRA/R-50"
 #  WEIGHT: "/home/wenjing/storage/result/result_/no_last_layers_res_1024.pth"
-  WEIGHT: "/home/wenjing/storage/result/result_/model_1440000_result20.pth"
+  WEIGHT: "/home/wenjing/storage/result/result_/model_0950000_result20.pth"
 #  WEIGHT: "/home/wenjing/.torch/models/e2e_mask_rcnn_R_50_C4_1x.pth"
   BACKBONE:
 #    CONV_BODY: "R-50-FPN"
@@ -50,7 +50,7 @@ MODEL:
     PREDICTOR: 'MaskRCNNC4Predictor'
     LOSS: 'berhu'
 
-  TENSORBOARD: True
+  TENSORBOARD: False
 
   MASK_ON: True
   DEPTH_ON: True
