@@ -58,7 +58,7 @@ class GeneralizedRCNN(nn.Module):
         if self.training and targets is None:
             raise ValueError("In training mode, targets should be passed")
         images = to_image_list(images)
-        if self.FPN_RES == "R-50-FPN":
+        if self.FPN_RES == "R-50-FPN" or self.FPN_RES == "R-101-FPN":
             features, resnet_output = self.backbone(images.tensors)
         else:
             features = self.backbone(images.tensors)

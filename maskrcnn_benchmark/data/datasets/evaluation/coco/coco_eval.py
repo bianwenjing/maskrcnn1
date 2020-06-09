@@ -103,16 +103,55 @@ def do_coco_evaluation(
             results.update(res)
 ############################################################################
     ##############  inference for each category
-    res = evaluate_depth_predictions(dataset.coco, coco_results['depth'], file_path, "depth")
-    for catId in dataset.coco.getCatIds():
-        # print('£££££££££££££££££££££££', catId)  # input category id
-        res.params.catIds = [catId]
-        res.evaluate(each_category = True)
-        res.summarize()
-        # result_one_category.update(res)
-        # if output_folder:
-        #     name = str(catId) + ".pth"
-        #     torch.save(result_one_category, os.path.join(output_folder, name))
+    eval_cate = False
+    # care_cate = [1,2,3,4,5,6,7,8,9,10,11,12,14,16,24,28,33,34,36,39]
+    care_cate = [39]
+    cate = {}
+    # cate['otherfur'] = [25, 43, 51, 56, 57, 67, 68, 70, 81, 85, 87, 90, 91, 96, 97, 99, 104, 110, 116, 122, 126, 129, 143, 153,
+    #             155, 177, 213, 233, 234, 282, 289, 307, 326, 354, 363, 389, 410, 411, 484, 525, 566,
+    #             581, 765, 822, 851, 1117, 1169, 1177, 1180, 1202, 1209, 1227, 1242, 1244, 1256, 1270, 1290, 1341, 1351]
+    # cate['sofa']=[6,1313]
+    # cate['bed'] = [11, 1191, 494, 786, 1349]
+    # cate['bathtub'] = [42]
+    # cate['bookshelf']=[18]
+    # cate['carbinet'] = [7, 29, 75, 1164,1173, 385, 1322, 815]
+    # cate['chair'] = [2, 10, 23, 74, 1184, 1291, 1338, 885]
+    # cate['counter'] = [159, 35, 1156]
+    # cate['curtain'] = [21]
+    # cate['desk'] = [9]
+    # cate['door'] = [5, 161, 1167, 276, 188, 1208, 385, 649, 569, 1345]
+    # cate['picture'] = [15, 1188, 1218, 15]
+    # cate['refrigerator'] = [27, 165, 1062]
+    # cate['showercurtain'] = [55]
+    # cate['sink'] = [14]
+    # cate['table'] = [4, 24, 44, 45, 1193, 108, 222, 1355]
+    # cate['toilet'] = [17, 1257]
+    # cate['window'] = [16]
+
+    mode = 'segm'
+    if eval_cate==True:
+        if mode == 'depth':
+            res = evaluate_depth_predictions(dataset.coco, coco_results[mode], file_path, mode)
+        else:
+            res = evaluate_predictions_on_coco(dataset.coco, coco_results[mode], file_path, mode)
+        for catId in dataset.coco.getCatIds():
+            if catId in care_cate:
+                print('##############', catId)
+                res.params.catIds = [catId]
+                res.evaluate(each_category = True)
+                if mode =='segm':
+                    res.accumulate()
+                res.summarize()
+                # result_one_category.update(res)
+                # if output_folder:
+                #     name = str(catId) + ".pth"
+                #     torch.save(result_one_category, os.path.join(output_folder, name))
+        # for i in cate.keys():
+        #     print('%%%%%%%%%%%%', i)
+        #     res.params.catIds = cate[i]
+        #     res.evaluate()
+        #     res.accumulate()
+        #     res.summarize()
 #################################################################################
 
     logger.info(results)
@@ -215,7 +254,8 @@ def prepare_for_coco_segmentation(predictions, dataset):
     return coco_results
 
 def prepare_for_depth(predictions, dataset):
-    masker = Masker2()
+    masker = Masker(threshold=0.5, padding=1)
+    masker2 = Masker2()
     # assert isinstance(dataset, COCODataset)
     coco_results = []
     # print('%%%%%%%%%%%', len(predictions)) #number of validation images
@@ -232,14 +272,20 @@ def prepare_for_depth(predictions, dataset):
         image_height = img_info["height"]
         prediction = prediction.resize((image_width, image_height))
         depths = prediction.get_field("depth")
+        masks = prediction.get_field("mask")
         # print('@@@@@@@@@@@@@@@@@', depths[0][0])
         # depths.shape [48, 1, 28, 28]
 
         # t = time.time()
         # Masker is necessary only if masks haven't been already resized.
 
-        depths = masker(depths.expand(1, -1, -1, -1, -1), prediction)
+        depths = masker2(depths.expand(1, -1, -1, -1, -1), prediction)
         depths = depths[0]
+        ###########################
+        masks = masker(masks.expand(1, -1, -1, -1, -1), prediction)
+        masks = masks[0].int()
+        depths = depths*masks
+        #################################
         output_dir = cfg.OUTPUT_DIR + '/depth/' + str(image_id)
         dep_dir = []
         for i in range(int(depths.shape[0])):

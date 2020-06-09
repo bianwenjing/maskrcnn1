@@ -120,32 +120,46 @@ class DEPTHeval(COCOeval):
         #                  for catId in catIds}
         if p.iouType == 'segm' or p.iouType == 'bbox':
             computeIoU = self.computeIoU
+            self.ious = {(imgId, catId): computeIoU(imgId, catId) \
+                         for imgId in p.imgIds
+                         for catId in catIds}
         elif p.iouType =='depth':
             computeIoU = self.compute_depth_metrics
         elif p.iouType == 'keypoints':
             computeIoU = self.computeOks
-        if p.iouType == 'whole_depth':
+        elif p.iouType == 'whole_depth':
             computeIoU = self.compute_whole_depth_metrics
 
 
-        self.ious = {(imgId, catId): computeIoU(imgId, catId) \
-                    for imgId in p.imgIds
-                    for catId in catIds}
+
+        # if p.iouType == 'depth' or p.iouType == 'whole_depth':
+        #     error = []
+        #     for imgId in p.imgIds:
+        #         for catId in catIds:
+        #             x = computeIoU(imgId, catId)
+        #             if x != []:
+        #                 error.append(x)
+        #     error = np.asarray(error)
+        #     if len(error.shape) !=2:
+        #         self.mean_error = np.ones(9)
+        #     else:
+        #         self.mean_error = np.mean(error, axis=0)
+        #         if each_category:
+        #             # if self.mean_error[0]<0.3:
+        #             print('**********',catIds, self.mean_error)
         if p.iouType == 'depth' or p.iouType == 'whole_depth':
             error = []
             for imgId in p.imgIds:
-                for catId in catIds:
-                    x = computeIoU(imgId, catId)
-                    if x != []:
-                        error.append(x)
+                x = computeIoU(imgId, catIds)
+                if x != []:
+                    error.append(x)
             error = np.asarray(error)
-            if len(error.shape) !=2:
+            if len(error.shape) != 2:
                 self.mean_error = np.ones(9)
             else:
                 self.mean_error = np.mean(error, axis=0)
                 if each_category:
-                    if self.mean_error[0]<0.3:
-                        print('**********',catIds, self.mean_error)
+                    print('**********', catIds, self.mean_error)
         else:
             evaluateImg = self.evaluateImg
             maxDet = p.maxDets[-1]
@@ -180,15 +194,17 @@ class DEPTHeval(COCOeval):
 
         depth_d = Image.open(d[0])
         width, height = depth_d.size
-        depth_d = np.array(depth_d)
+        depth_d = np.array(depth_d)/1000
         depth_g = Image.open('/home/wenjing/storage/ScanNetv2/' + g[0]).resize((width, height))
-        depth_g = np.array(depth_g)
+        depth_g = np.array(depth_g)/1000
+        depth_d[depth_d > 10] = 10
 
         valid_mask = (depth_d > 0) & (depth_g> 0)  # (depth_d!=0) # negative predicted values
         # valid_mask = (depth_g > 0)
         depth_d = depth_d[valid_mask]
         depth_g = depth_g[valid_mask]
-        depth_d[depth_d>10000] = 10000
+
+
 
         thresh = np.maximum((depth_g / depth_d), (depth_d / depth_g))
         a1 = (thresh < 1.25).mean()
@@ -227,12 +243,17 @@ class DEPTHeval(COCOeval):
 
     def compute_depth_metrics(self, imgId, catId):
         p = self.params
-        if p.useCats:
-            gt = self._gts[imgId, catId]
-            dt = self._dts[imgId, catId]
-        else:
-            gt = [_ for cId in p.catIds for _ in self._gts[imgId, cId]]
-            dt = [_ for cId in p.catIds for _ in self._dts[imgId, cId]]
+
+        gt = [_ for cId in p.catIds for _ in self._gts[imgId, cId]]
+        dt = [_ for cId in p.catIds for _ in self._dts[imgId, cId]]
+        # print('^^^^^^^^', len(gt), len(dt))
+        # if p.useCats:
+        #     gt = self._gts[imgId, catId]
+        #     dt = self._dts[imgId, catId]
+        # else:
+        #     gt = [_ for cId in p.catIds for _ in self._gts[imgId, cId]]
+        #     dt = [_ for cId in p.catIds for _ in self._dts[imgId, cId]]
+        # print('^^^^^^^^', len(gt), len(dt))
 
         if len(gt) == 0 or len(dt) ==0:
             return []
@@ -241,31 +262,42 @@ class DEPTHeval(COCOeval):
         # if len(dt) > p.maxDets[-1]:
         #     dt = dt[0:p.maxDets[-1]]
 
+
+        # if p.iouType == 'depth':
+        #     g = [g['depth'] for g in gt]
+        #     d = [d['depth'] for d in dt]
+        d_c = []
         if p.iouType == 'depth':
             g = [g['depth'] for g in gt]
-            d = [d['depth'] for d in dt]
+            for d in dt:
+                if d['score'] > 0:
+                    d_c.append(d['depth'])
         else:
             raise Exception('unknown iouType for iou computation')
         depth_g_ = Image.open('/home/wenjing/storage/ScanNetv2/' + g[0]).resize((320, 240))
-        depth_g_ = np.array(depth_g_)
+        depth_g_ = np.array(depth_g_)/1000
 
         depth_d = np.zeros((240,320))
-        for d_part in d:
-            # mask = depth_d==0
+        for d_part in d_c:
+            mask = depth_d==0
             depth_i = Image.open(d_part)
             depth_i = np.array(depth_i)
-            depth_d += depth_i
-
+            depth_d += depth_i*mask
+        depth_d = depth_d/1000
+        depth_d[depth_d > 10] = 10
+        # depth_d = depth_d.astype(int)
+        # depth_d[depth_d <0.5]=0
         valid_mask = (depth_d>0) & (depth_g_>0)  #(depth_d!=0) # negative predicted values
         # valid_mask = (depth_g_ > 0)
         depth_d = depth_d[valid_mask]
         depth_g = depth_g_[valid_mask]
-        depth_d[depth_d > 10000] = 10000
 
-        thresh = np.maximum((depth_g/depth_d), (depth_d/depth_g))
-        a1 = (thresh < 1.25).mean()
-        a2 = (thresh < 1.25 ** 2).mean()
-        a3 = (thresh < 1.25 ** 3).mean()
+        if len(depth_d)==0:
+            return []
+        # thresh = np.maximum((depth_g/depth_d), (depth_d/depth_g))
+        # a1 = (thresh < 1.25).mean()
+        # a2 = (thresh < 1.25 ** 2).mean()
+        # a3 = (thresh < 1.25 ** 3).mean()
 
         abs_diff = np.abs(depth_g - depth_d)
 
@@ -279,8 +311,8 @@ class DEPTHeval(COCOeval):
         abs_rel = np.mean(np.abs(depth_d - depth_g) / depth_g)
         sq_rel = np.mean(((depth_g - depth_d) ** 2) / depth_g)
 
-        log10_error = np.abs(np.log10(depth_g)-np.log10(depth_d))
-        log10_mean = np.mean(log10_error)
+        # log10_error = np.abs(np.log10(depth_g)-np.log10(depth_d))
+        # log10_mean = np.mean(log10_error)
         # metrics = [abs_rel, sq_rel, rmse, rmse_log, log10_mean, a1, a2, a3]
 
         inv_output = 1 / depth_d
@@ -307,7 +339,6 @@ class DEPTHeval(COCOeval):
         else:
             gt = [_ for cId in p.catIds for _ in self._gts[imgId,cId]]
             dt = [_ for cId in p.catIds for _ in self._dts[imgId,cId]]
-        # print('3333333333333333', dt)
 
         if len(gt) == 0 and len(dt) ==0:
             return []

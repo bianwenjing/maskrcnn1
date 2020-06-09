@@ -1,8 +1,12 @@
 MODEL:
   META_ARCHITECTURE: "GeneralizedRCNN"
-  WEIGHT: "catalog://ImageNetPretrained/MSRA/R-101"
+#  WEIGHT: "catalog://ImageNetPretrained/MSRA/R-101"
+#  WEIGHT: "/home/wenjing/storage/result/result_/no_last_layers_101.pth"
+  WEIGHT: "/home/wenjing/storage/result/result_nyu14/model_0045000.pth"
+#  WEIGHT: "/home/wenjing/storage/result/result_/0360000_result12_convert.pth"
   BACKBONE:
     CONV_BODY: "R-101-FPN"
+    FREEZE_CONV_BODY_AT: 4
   RESNETS:
     BACKBONE_OUT_CHANNELS: 256
   RPN:
@@ -20,6 +24,7 @@ MODEL:
     POOLER_SAMPLING_RATIO: 2
     FEATURE_EXTRACTOR: "FPN2MLPFeatureExtractor"
     PREDICTOR: "FPNPredictor"
+    NUM_CLASSES: 41
   ROI_MASK_HEAD:
     POOLER_SCALES: (0.25, 0.125, 0.0625, 0.03125)
     FEATURE_EXTRACTOR: "MaskRCNNFPNFeatureExtractor"
@@ -28,10 +33,38 @@ MODEL:
     POOLER_SAMPLING_RATIO: 2
     RESOLUTION: 28
     SHARE_BOX_FEATURE_EXTRACTOR: False
+  ROI_DEPTH_HEAD:
+    POOLER_SCALES: (0.25, 0.125, 0.0625, 0.03125)
+    FEATURE_EXTRACTOR: "MaskRCNNFPNFeatureExtractor"
+    PREDICTOR: "MaskRCNNC4Predictor"
+    POOLER_RESOLUTION: 14
+    POOLER_SAMPLING_RATIO: 2
+    RESOLUTION: 28
+    #    RESOLUTION: 56
+    SHARE_BOX_FEATURE_EXTRACTOR: False
+    LOSS: 'MSE'
+    ADA: "L1"
+  WHOLE_DEPTH:
+    #    MODEL_OPTION: 'DORN'
+    MODEL_OPTION: 'ORIG'
+    #    MODEL_OPTION: 'MONO'
+    FEATURE_EXTRACTOR: 'FPN'
+    PREDICTOR: 'MaskRCNNC4Predictor'
+    LOSS: 'MSE'
+
+  TENSORBOARD: False
   MASK_ON: True
+  DEPTH_ON: True
+  WHOLE_DEPTH_ON: False
+  PREPROCESS: False
+  decouple: 'decoupled'
+
+  FREEZE_BOX_MASK: True
+  FREEZE_FPN: True
+  FREEZE_RPN: True
 DATASETS:
-  TRAIN: ("coco_2014_train", "coco_2014_valminusminival")
-  TEST: ("coco_2014_minival",)
+  TRAIN: ("ScanNet_train",)
+  TEST: ("ScanNet_val",)
 DATALOADER:
   SIZE_DIVISIBILITY: 32
 SOLVER:

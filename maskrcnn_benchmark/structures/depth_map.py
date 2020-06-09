@@ -193,6 +193,9 @@ class BinaryMaskList(object):
     def __getitem__(self, index):
         if self.masks.numel() == 0:
             raise RuntimeError("Indexing empty BinaryMaskList")
+        if isinstance(index, torch.cuda.LongTensor):
+
+            index = torch.zeros(len(index), dtype=torch.long)
         return BinaryMaskList(self.masks[index], self.size)
 
     def __iter__(self):

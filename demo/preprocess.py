@@ -29,73 +29,73 @@ def preprocess_depth_map(img):
     img[b:-b, b:-b] = result1
     return img
 
-# def fill_depth_colorization(imgRgb, imgDepth, alpha=1):
-#     # imgRgb PIL Image
-#
-#     # imgIsNoise = (imgDepth == 0)
-#     maxImgAbsDepth = max(imgDepth)
-#     imgDepth = imgDepth/maxImgAbsDepth
-#
-#     H = imgDepth.shape[0]
-#     W = imgDepth.shape[1]
-#     numPix = H * W
-#     indsM = np.arange(0, numPix).reshape(H, W)
-#
-#     knownValMask = (imgDepth != 0)
-#
-#     grayImg = imgRgb.convert('L')
-#
-#     winRad = 1
-#     len = 0
-#     absImgNdx = -1
-#
-#     cols = np.zeros((numPix * (2*winRad+1) ^ 2, 1))
-#     rows = np.zeros((numPix * (2*winRad+1) ^ 2, 1))
-#     vals = np.zeros((numPix * (2*winRad+1) ^ 2, 1))
-#     gvals = zeros((1, (2*winRad+1) ^ 2))
-#
-#     for j in range(W):
-#         for i in range(H):
-#             absImgNdx = absImgNdx + 1
-#             nWin = 0  # Counts the number of points in the current window
-#             for ii in range(max(1, i-winRad)-1,min(i+winRad, H)):
-#                 for jj in range(max(1, j-winRad)-1, min(j+winRad, W)):
-#                     if ii == i and jj == j:
-#                         continue
-#
-#                     rows[len] = absImgNdx
-#                     cols[len] = indsM[ii, jj]
-#                     gvals[nWin] = grayImg[ii, jj]
-#                     len = len + 1
-#                     nWin = nWin + 1
-#             curVal = grayImg[i,j]
-#             gvals[nWin] = curVal
-#             c_var = np.mean(gvals[0:nWin+1]-np.mean(gvals[0:nWin+1])^2)
-#             csig = c_var * 0.6
-#             mgv = min((gvals[0:nWin]-curVal)^2)
-#
-#             if csig < (-mgv/np.log(0.01)):
-#                 csig = -mgv / np.log(0.01)
-#             if csig < 0.000002:
-#                 csig = 0.000002
-#             gvals[0:nWin] = np.exp(-(gvals[0:nWin]-curVal)^2/csig)
-#             gvals[0:nWin] = gvals[0:nWin]/np.sum(gvals[0:nWin])
-#             vals[len-nWin:len] = -gval[0:nWin]
-#
-#     vals = vals[0:len]
-#     cols = cols[0:len]
-#     rows = rows[0:len]
-#     A = csr_matrix((vals, (rows, cols)), shape = (numPix, numPix)).toarray()
-#
-#     rows = np.arange(0, np.size(knownValMask))
-#     cols = np.arange(0, np.size(knownValMask))
-#     vals = knownValMask.reshape(-1) * alpha
-#     G = csr_matrix((vals, (rows, cols)), shape = (numPix, numPix)).toarray()
-#
-#     new_vals = (vals * imgDepth.reshape(-1)) / (A + G)
-#     new_vals = new_vals.reshape((H,W))
-#     denoisedDepthImg = new_vals * maxImgAbsDepth
-#     return denoisedDepthImg
+def fill_depth_colorization(imgRgb, imgDepth, alpha=1):
+    # imgRgb PIL Image
+
+    # imgIsNoise = (imgDepth == 0)
+    maxImgAbsDepth = max(imgDepth)
+    imgDepth = imgDepth/maxImgAbsDepth
+
+    H = imgDepth.shape[0]
+    W = imgDepth.shape[1]
+    numPix = H * W
+    indsM = np.arange(0, numPix).reshape(H, W)
+
+    knownValMask = (imgDepth != 0)
+
+    grayImg = imgRgb.convert('L')
+
+    winRad = 1
+    len = 0
+    absImgNdx = -1
+
+    cols = np.zeros((numPix * (2*winRad+1) ^ 2, 1))
+    rows = np.zeros((numPix * (2*winRad+1) ^ 2, 1))
+    vals = np.zeros((numPix * (2*winRad+1) ^ 2, 1))
+    gvals = zeros((1, (2*winRad+1) ^ 2))
+
+    for j in range(W):
+        for i in range(H):
+            absImgNdx = absImgNdx + 1
+            nWin = 0  # Counts the number of points in the current window
+            for ii in range(max(1, i-winRad)-1,min(i+winRad, H)):
+                for jj in range(max(1, j-winRad)-1, min(j+winRad, W)):
+                    if ii == i and jj == j:
+                        continue
+
+                    rows[len] = absImgNdx
+                    cols[len] = indsM[ii, jj]
+                    gvals[nWin] = grayImg[ii, jj]
+                    len = len + 1
+                    nWin = nWin + 1
+            curVal = grayImg[i,j]
+            gvals[nWin] = curVal
+            c_var = np.mean(gvals[0:nWin+1]-np.mean(gvals[0:nWin+1])^2)
+            csig = c_var * 0.6
+            mgv = min((gvals[0:nWin]-curVal)^2)
+
+            if csig < (-mgv/np.log(0.01)):
+                csig = -mgv / np.log(0.01)
+            if csig < 0.000002:
+                csig = 0.000002
+            gvals[0:nWin] = np.exp(-(gvals[0:nWin]-curVal)^2/csig)
+            gvals[0:nWin] = gvals[0:nWin]/np.sum(gvals[0:nWin])
+            vals[len-nWin:len] = -gval[0:nWin]
+
+    vals = vals[0:len]
+    cols = cols[0:len]
+    rows = rows[0:len]
+    A = csr_matrix((vals, (rows, cols)), shape = (numPix, numPix)).toarray()
+
+    rows = np.arange(0, np.size(knownValMask))
+    cols = np.arange(0, np.size(knownValMask))
+    vals = knownValMask.reshape(-1) * alpha
+    G = csr_matrix((vals, (rows, cols)), shape = (numPix, numPix)).toarray()
+
+    new_vals = (vals * imgDepth.reshape(-1)) / (A + G)
+    new_vals = new_vals.reshape((H,W))
+    denoisedDepthImg = new_vals * maxImgAbsDepth
+    return denoisedDepthImg
 
 if __name__ == '__main__':
     img_path = '/home/wenjing/storage/ScanNetv2/scannetv2_val.txt'

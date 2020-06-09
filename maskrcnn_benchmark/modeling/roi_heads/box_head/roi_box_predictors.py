@@ -24,9 +24,12 @@ class FastRCNNPredictor(nn.Module):
         nn.init.constant_(self.bbox_pred.bias, 0)
 
     def forward(self, x):
+        # print('#############', x.shape)
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
+        # print('#########', x.shape) (roi_num, 2048)
         cls_logit = self.cls_score(x)
+        # (roi_num, 550)
         bbox_pred = self.bbox_pred(x)
         return cls_logit, bbox_pred
 

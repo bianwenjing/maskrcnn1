@@ -34,8 +34,10 @@ class MaskRCNNC4Predictor(nn.Module):
     #     # print('***************', x)
     #     return x
 
-        self.conv5_mask = ConvTranspose2d(num_inputs, dim_reduced, 2, 2, 0)
+        # self.conv5_mask = ConvTranspose2d(num_inputs, dim_reduced, 2, 2, 0)
+        self.conv5_mask = UpProjModule(num_inputs, dim_reduced)
         self.mask_fcn_logits = Conv2d(dim_reduced, num_classes, 1, 1, 0)
+
 
         for name, param in self.named_parameters():
             # param.requires_grad = False

@@ -275,6 +275,8 @@ class ORIG(torch.nn.Module):
         self.predictor = make_whole_depth_predictor(
             cfg, self.feature_extractor.out_channels)
         self.loss_evaluator = make_whole_depth_loss_evaluator(cfg)
+        # for name, param in self.named_parameters():
+        #     param.requires_grad = False
 
 
     def forward(self, x, targets = None, images = None):

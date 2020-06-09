@@ -5,7 +5,7 @@ from .box_head.box_head import build_roi_box_head
 from .mask_head.mask_head import build_roi_mask_head
 from .keypoint_head.keypoint_head import build_roi_keypoint_head
 from .depth_head.depth_head import build_roi_depth_head
-
+from .dorn.dorn import build_dorn_head
 class CombinedROIHeads(torch.nn.ModuleDict):
     """
     Combines a set of individual heads (for box prediction or masks) into a single
@@ -24,6 +24,7 @@ class CombinedROIHeads(torch.nn.ModuleDict):
     def forward(self, features, proposals, targets=None):
         losses = {}
         # TODO rename x to roi_box_features, if it doesn't increase memory consumption
+        # print('^^^^^^^^^^^', proposals)
         x, detections, loss_box = self.box(features, proposals, targets)
         ##############################
         if not self.cfg.MODEL.FREEZE_BOX_MASK:
@@ -40,7 +41,8 @@ class CombinedROIHeads(torch.nn.ModuleDict):
                 mask_features = x
             # During training, self.box() will return the unaltered proposals as "detections"
             # this makes the API consistent during training and testing
-            x, detections, loss_mask = self.mask(mask_features, detections, targets)
+
+            x, detections, loss_mask, mask_result = self.mask(mask_features, detections, targets)
             ##################################
             if not self.cfg.MODEL.FREEZE_BOX_MASK:
                 losses.update(loss_mask)
@@ -50,11 +52,24 @@ class CombinedROIHeads(torch.nn.ModuleDict):
             depth_features = features
             # optimization: during training, if we share the feature extractor between
             # the box and the mask heads, then we can reuse the features already computed
-            if (
-                self.training
-                and self.cfg.MODEL.ROI_DEPTH_HEAD.SHARE_BOX_FEATURE_EXTRACTOR
-            ):
-                depth_features = x
+            # if (
+            #     self.training
+            #     and self.cfg.MODEL.ROI_DEPTH_HEAD.SHARE_BOX_FEATURE_EXTRACTOR
+            # ):
+            #     depth_features = mask_features
+            # During training, self.box() will return the unaltered proposals as "detections"
+            # this makes the API consistent during training and testing
+            x, detections, loss_depth = self.depth(depth_features, detections, targets, mask_result)
+            losses.update(loss_depth)
+        if self.cfg.MODEL.DORN_ON:
+            depth_features = features
+            # optimization: during training, if we share the feature extractor between
+            # the box and the mask heads, then we can reuse the features already computed
+            # if (
+            #     self.training
+            #     and self.cfg.MODEL.ROI_DEPTH_HEAD.SHARE_BOX_FEATURE_EXTRACTOR
+            # ):
+            #     depth_features = mask_features
             # During training, self.box() will return the unaltered proposals as "detections"
             # this makes the API consistent during training and testing
             x, detections, loss_depth = self.depth(depth_features, detections, targets)
@@ -73,6 +88,7 @@ class CombinedROIHeads(torch.nn.ModuleDict):
             # this makes the API consistent during training and testing
             x, detections, loss_keypoint = self.keypoint(keypoint_features, detections, targets)
             losses.update(loss_keypoint)
+
         return x, detections, losses
 
 
@@ -91,7 +107,8 @@ def build_roi_heads(cfg, in_channels):
         roi_heads.append(("keypoint", build_roi_keypoint_head(cfg, in_channels)))
     if cfg.MODEL.DEPTH_ON:
         roi_heads.append(("depth", build_roi_depth_head(cfg, in_channels)))
-
+    if cfg.MODEL.DORN_ON:
+        roi_heads.append(("depth", build_dorn_head(cfg, in_channels)))
     # combine individual heads in a single module
     if roi_heads:
         roi_heads = CombinedROIHeads(cfg, roi_heads)

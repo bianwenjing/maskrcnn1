@@ -34,13 +34,19 @@ class MaskPostProcessor(nn.Module):
             results (list[BoxList]): one BoxList for each image, containing
                 the extra field mask
         """
-        # print('22222222222', x)
         # mask_prob = x.sigmoid()
         mask_prob = x
         # select masks coresponding to the predicted classes
         num_masks = x.shape[0]
         labels = [bbox.get_field("labels") for bbox in boxes]
         labels = torch.cat(labels)
+        masks = [bbox.get_field("mask") for bbox in boxes]
+        masks = torch.cat(masks)
+        scores = [bbox.get_field("scores") for bbox in boxes]
+        scores = torch.cat(scores)
+        # print("%%%%%%%%%%%%%", mask_prob.shape)
+        masks[masks>0.5] = 1
+        masks[masks<=0.5] = 0
         index = torch.arange(num_masks, device=labels.device)
         mask_prob = mask_prob[index, labels][:, None]
 
@@ -51,13 +57,15 @@ class MaskPostProcessor(nn.Module):
             mask_prob = self.masker(mask_prob, boxes)
 
         results = []
-        for prob, box in zip(mask_prob, boxes):
+
+        for prob, box, mask, score in zip(mask_prob, boxes, masks, scores):
             bbox = BoxList(box.bbox, box.size, mode="xyxy")
             for field in box.fields():
                 bbox.add_field(field, box.get_field(field))
+            # bbox.add_field("depth", prob*masks)
             bbox.add_field("depth", prob)
             results.append(bbox)
-
+        # print('$$$$$$$$$', len(results))
         return results
 
 
@@ -74,14 +82,16 @@ class MaskPostProcessorCOCOFormat(MaskPostProcessor):
 
         results = super(MaskPostProcessorCOCOFormat, self).forward(x, boxes)
         for result in results:
-            masks = result.get_field("depth").cpu()
+            depths = result.get_field("depth").cpu()
+
             rles = [
-                mask_util.encode(np.array(mask[0, :, :, np.newaxis], order="F"))[0]
-                for mask in masks
+                mask_util.encode(np.array(depth[0, :, :, np.newaxis], order="F"))[0]
+                for depth in depths
             ]
             for rle in rles:
                 rle["counts"] = rle["counts"].decode("utf-8")
             result.add_field("depth", rles)
+
         return results
 
 
@@ -140,7 +150,7 @@ def paste_mask_in_image(mask, box, im_h, im_w, padding=1):
     mask = interpolate(mask, size=(h, w), mode='bilinear', align_corners=False)
     mask = mask[0][0]
     # if thresh >= 0:
-    #     mask = mask > thresh
+    # mask = mask >
     # else:
     #     # for visualization and debugging, we also
     #     # allow it to return an unmodified mask

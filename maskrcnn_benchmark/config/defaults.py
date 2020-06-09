@@ -26,6 +26,8 @@ _C.MODEL.MASK_ON = False
 _C.MODEL.RETINANET_ON = False
 _C.MODEL.KEYPOINT_ON = False
 _C.MODEL.DEPTH_ON = False
+_C.MODEL.DORN_ON = False
+_C.MODEL.decouple = "independent"
 _C.MODEL.FREEZE_BOX_MASK = False
 _C.MODEL.FREEZE_FPN = False
 _C.MODEL.FREEZE_RPN = False
@@ -271,6 +273,7 @@ _C.MODEL.ROI_DEPTH_HEAD.DILATION = 1
 # GN
 _C.MODEL.ROI_DEPTH_HEAD.USE_GN = False
 _C.MODEL.ROI_DEPTH_HEAD.LOSS = "MSE"
+_C.MODEL.ROI_DEPTH_HEAD.ADA = "L2"
 ##############################################################################
 _C.MODEL.WHOLE_DEPTH = CN()
 # _C.MODEL.WHOLE_DEPTH.CONV_LAYERS = (2048, 2048, 2048, 2048)

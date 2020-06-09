@@ -1,7 +1,7 @@
 MODEL:
   META_ARCHITECTURE: "GeneralizedRCNN"
 #  WEIGHT: "/home/wenjing/result3/model_final.pth"
-  WEIGHT: "/home/wenjing/storage/result/result32/model_0062500.pth"
+  WEIGHT: "/home/wenjing/storage/result/result28/model_0212500.pth"
 
   ROI_BOX_HEAD:
     NUM_CLASSES: 550

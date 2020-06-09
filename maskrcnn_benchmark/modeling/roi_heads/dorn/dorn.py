@@ -1,12 +1,10 @@
 import torch
 from torch import nn
-
-from .make_roi_depth_feature_extractor import make_roi_depth_feature_extractor
-
-from .roi_depth_predictors import make_roi_depth_predictor
-from .inference import make_roi_depth_post_processor
-from .loss import make_roi_depth_loss_evaluator
+from .Ordinal import OrdinalRegressionLayer
+from .SceneUnderstanding import SceneUnderstandingModule
+from .loss import make_dorn_loss_evaluator
 from maskrcnn_benchmark.structures.bounding_box import BoxList
+from maskrcnn_benchmark.modeling.roi_heads.depth_head.inference import make_roi_depth_post_processor
 
 def keep_only_positive_boxes(boxes):
     """
@@ -30,22 +28,33 @@ def keep_only_positive_boxes(boxes):
         positive_inds.append(inds_mask)
     return positive_boxes, positive_inds
 
-class ROIDepthHead(nn.Module):
-    def __init__(self, cfg, in_channels):
-        super(ROIDepthHead, self).__init__()
+class DORN(nn.Module):
+    def __init__(self, cfg, in_channels, ord_num=90, gamma=1.0, beta=80.0,
+                 input_size=(385, 513), kernel_size=16, pyramid=[4, 8, 12],
+                 batch_norm=False,
+                 discretization="SID", pretrained=True):
+        super(DORN, self).__init__()
         self.cfg = cfg.clone()
-        self.feature_extractor = make_roi_depth_feature_extractor(cfg, in_channels)
-        self.predictor = make_roi_depth_predictor(
-            cfg, self.feature_extractor.out_channels)
-        self.post_processor = make_roi_depth_post_processor(cfg)
-        self.loss_evaluator = make_roi_depth_loss_evaluator(cfg)
-        self.decouple = cfg.MODEL.decouple
+        self.ord_num = ord_num
+        out_channels = 256
+        self.aspp_module = SceneUnderstandingModule(cfg, in_channels,out_channels, ord_num, size=input_size,
+                                                                 kernel_size=kernel_size,
+                                                                 pyramid=pyramid,
+                                                                 batch_norm=batch_norm)
+        self.orl = OrdinalRegressionLayer()
+        self.loss_evaluator = make_whole_depth_loss_evaluator(cfg)
+        # self.feature_extractor = make_roi_depth_feature_extractor(cfg, in_channels)
+        # self.predictor = make_roi_depth_predictor(
+        #     cfg, self.feature_extractor.out_channels)
+        # self.post_processor = make_roi_depth_post_processor(cfg)
+        # self.loss_evaluator = make_roi_depth_loss_evaluator(cfg)
+
         #####################################################
         # for name, param in self.named_parameters():
         #     param.requires_grad = False
         #####################################################
 
-    def forward(self, features, proposals, targets=None, mask_result=None):
+    def forward(self, features, proposals, targets=None):
         """
         Arguments:
             features (list[Tensor]): feature-maps from possibly several levels
@@ -60,7 +69,7 @@ class ROIDepthHead(nn.Module):
             losses (dict[Tensor]): During training, returns the losses for the
                 head. During testing, returns an empty dict.
         """
-        # print('%%%%%%%%%%%%%%%%%%', features[0].shape, features[4].shape)
+
         if self.training:
             # during training, only focus on positive boxes
             ##############################
@@ -69,24 +78,18 @@ class ROIDepthHead(nn.Module):
             ##############################
             all_proposals = proposals
             proposals, positive_inds = keep_only_positive_boxes(proposals)
-        if self.training and self.cfg.MODEL.ROI_DEPTH_HEAD.SHARE_BOX_FEATURE_EXTRACTOR:
-            x = features
-            x = x[torch.cat(positive_inds, dim=0)]
-        else:
-            x = self.feature_extractor(features, proposals)
-         # x.shape (num, 256, 14, 14)
-        depth_logits = self.predictor(x)
-        # depth_logits shape (# of proposals, 20 classes, 28, 28)
+        x = self.aspp_module(features, proposals)
+        depth_labels, ord_labels = self.orl(x)
 
         if not self.training:
             depth_logits = depth_logits*10000
             result = self.post_processor(depth_logits, proposals)
             return x, result, {}
-        # print('@@@@@@@@@@@@@@@@@@@', depth_logits)
 
-        loss_depth = self.loss_evaluator(proposals, depth_logits, targets, mask_result, self.decouple)
+        loss_depth = self.loss_evaluator(proposals, depth_logits, targets)
+        # loss_depth = self.loss_evaluator(targets, depth_logits, targets)
         return x, all_proposals, dict(loss_depth=loss_depth)
 
 
-def build_roi_depth_head(cfg, in_channels):
+def build_dorn_head(cfg, in_channels):
     return ROIDepthHead(cfg, in_channels)

@@ -144,7 +144,7 @@ class ORIG_LOSS(object):
         huber_mask = (diff > huber_c).detach()
         huber_mask_inverse = (diff <= huber_c).detach()
         diff1 = diff[huber_mask_inverse]
-        diff2 = (diff[huber_mask]**2 + huber_c)/ (2*huber_c)
+        diff2 = (diff[huber_mask]**2 + huber_c**2)/(2*huber_c)
 
         loss = torch.cat((diff1, diff2)).mean()
         return loss

@@ -1,14 +1,16 @@
 MODEL:
   META_ARCHITECTURE: "GeneralizedRCNN"
   # WEIGHT: "catalog://ImageNetPretrained/MSRA/R-50"
-#  WEIGHT: "/home/wenjing/storage/result/result_/no_last_layers_fpn2.pth"
-#  WEIGHT: "/home/wenjing/storage/result/result_/model_result11_4.pth"
-  WEIGHT: "/home/wenjing/storage/result/result30/model_0075000.pth"
+#  WEIGHT: "/home/wenjing/storage/result/result_/no_last_layers_fpn.pth"
+#  WEIGHT: "/home/wenjing/storage/result/result_/model_0035000_result_nyu.pth"
+  WEIGHT: "/home/wenjing/storage/result/result_nyu10/model_0055000.pth"
+#  WEIGHT: "/home/wenjing/storage/result/result_/model_0360000_result_nyu2.pth"
   BACKBONE:
     CONV_BODY: "R-50-FPN"
-    FREEZE_CONV_BODY_AT: 5
+    FREEZE_CONV_BODY_AT: 4
   RESNETS:
-    BACKBONE_OUT_CHANNELS: 1024
+#    BACKBONE_OUT_CHANNELS: 1024
+    BACKBONE_OUT_CHANNELS: 256
   RPN:
     USE_FPN: True
     ANCHOR_STRIDE: (4, 8, 16, 32, 64)
@@ -25,8 +27,10 @@ MODEL:
     FEATURE_EXTRACTOR: "FPN2MLPFeatureExtractor"
     PREDICTOR: "FPNPredictor"
 #    NUM_CLASSES: 20
-    NUM_CLASSES: 550
+    NUM_CLASSES: 41
+    ##########
 #    CONV_HEAD_DIM: 1024
+    ##########
   ROI_MASK_HEAD:
     POOLER_SCALES: (0.25, 0.125, 0.0625, 0.03125)
     FEATURE_EXTRACTOR: "MaskRCNNFPNFeatureExtractor"
@@ -46,7 +50,8 @@ MODEL:
     RESOLUTION: 28
 #    RESOLUTION: 56
     SHARE_BOX_FEATURE_EXTRACTOR: False
-    LOSS: 'adaptive'
+    LOSS: 'MSE'
+    ADA: "L1"
 #    CONV_LAYERS: (1024, 1024, 1024, 1024)
   WHOLE_DEPTH:
 #    MODEL_OPTION: 'DORN'
@@ -54,12 +59,14 @@ MODEL:
 #    MODEL_OPTION: 'MONO'
     FEATURE_EXTRACTOR: 'FPN'
     PREDICTOR: 'MaskRCNNC4Predictor'
-    LOSS: 'adaptive'
+    LOSS: 'MSE'
+
   TENSORBOARD: False
   MASK_ON: True
   DEPTH_ON: True
-  WHOLE_DEPTH_ON: True
-  PREPROCESS: True
+  WHOLE_DEPTH_ON: False
+  PREPROCESS: False
+  decouple: 'independent'
 
   FREEZE_BOX_MASK: False
   FREEZE_FPN: False
@@ -75,3 +82,7 @@ SOLVER:
   WEIGHT_DECAY: 0.0001
   STEPS: (60000, 80000)
   MAX_ITER: 90000
+#  BASE_LR: 0.005
+#  WEIGHT_DECAY: 0.0001
+#  STEPS: (240000, 320000)
+#  MAX_ITER: 360000

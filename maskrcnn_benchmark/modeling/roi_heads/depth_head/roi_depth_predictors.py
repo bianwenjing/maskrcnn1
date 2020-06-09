@@ -16,8 +16,8 @@ class MaskRCNNC4Predictor(nn.Module):
         dim_reduced = cfg.MODEL.ROI_DEPTH_HEAD.CONV_LAYERS[-1]
         num_inputs = in_channels
 
-        self.conv5_depth = ConvTranspose2d(num_inputs, dim_reduced, 2, 2, 0)
-        # self.conv5_depth = UpProjModule(num_inputs, dim_reduced)
+        # self.conv5_depth = ConvTranspose2d(num_inputs, dim_reduced, 2, 2, 0)
+        self.conv5_depth = UpProjModule(num_inputs, dim_reduced)
         # self.conv6_depth = UpProjModule(dim_reduced, dim_reduced)
         self.depth_fcn_logits = Conv2d(dim_reduced, num_classes, 1, 1, 0)
 

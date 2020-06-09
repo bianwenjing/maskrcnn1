@@ -1,12 +1,13 @@
 MODEL:
   META_ARCHITECTURE: "GeneralizedRCNN"
   # WEIGHT: "catalog://ImageNetPretrained/MSRA/R-50"
-  WEIGHT: "/home/wenjing/storage/result/result_/no_last_layers_fpn.pth"
+#  WEIGHT: "/home/wenjing/storage/result/result_/no_last_layers_fpn.pth"
+  WEIGHT: "/home/wenjing/storage/result/result30/model_0080000.pth"
   BACKBONE:
     CONV_BODY: "R-50-FPN"
     FREEZE_CONV_BODY_AT: 5
   RESNETS:
-    BACKBONE_OUT_CHANNELS: 256
+    BACKBONE_OUT_CHANNELS: 1024
   RPN:
     USE_FPN: True
     ANCHOR_STRIDE: (4, 8, 16, 32, 64)
@@ -24,7 +25,7 @@ MODEL:
     PREDICTOR: "FPNPredictor"
 #    NUM_CLASSES: 20
     NUM_CLASSES: 550
-#    CONV_HEAD_DIM: 1024
+    CONV_HEAD_DIM: 1024
   ROI_MASK_HEAD:
     POOLER_SCALES: (0.25, 0.125, 0.0625, 0.03125)
     FEATURE_EXTRACTOR: "MaskRCNNFPNFeatureExtractor"
@@ -33,7 +34,7 @@ MODEL:
     POOLER_SAMPLING_RATIO: 2
     RESOLUTION: 28
     SHARE_BOX_FEATURE_EXTRACTOR: False
-    CONV_LAYERS: (1024, 1024, 1024, 1024)
+#    CONV_LAYERS: (1024, 1024, 1024, 1024)
 
   ROI_DEPTH_HEAD:
     POOLER_SCALES: (0.25, 0.125, 0.0625, 0.03125)
@@ -45,7 +46,7 @@ MODEL:
 #    RESOLUTION: 56
     SHARE_BOX_FEATURE_EXTRACTOR: False
     LOSS: 'berhu'
-    CONV_LAYERS: (1024, 1024, 1024, 1024)
+#    CONV_LAYERS: (1024, 1024, 1024, 1024)
   WHOLE_DEPTH:
 #    MODEL_OPTION: 'DORN'
     MODEL_OPTION: 'ORIG'
@@ -53,7 +54,7 @@ MODEL:
     FEATURE_EXTRACTOR: 'FPN'
     PREDICTOR: 'MaskRCNNC4Predictor'
     LOSS: 'berhu'
-  TENSORBOARD: True
+  TENSORBOARD: False
   MASK_ON: True
   DEPTH_ON: False
   WHOLE_DEPTH_ON: False

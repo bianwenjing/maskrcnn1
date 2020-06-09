@@ -8,7 +8,7 @@ from .roi_mask_feature_extractors import make_roi_mask_feature_extractor
 from .roi_mask_predictors import make_roi_mask_predictor
 from .inference import make_roi_mask_post_processor
 from .loss import make_roi_mask_loss_evaluator
-
+from maskrcnn_benchmark.modeling.roi_heads.mask_head.inference import Masker
 
 def keep_only_positive_boxes(boxes):
     """
@@ -42,6 +42,7 @@ class ROIMaskHead(torch.nn.Module):
             cfg, self.feature_extractor.out_channels)
         self.post_processor = make_roi_mask_post_processor(cfg)
         self.loss_evaluator = make_roi_mask_loss_evaluator(cfg)
+        self.masker = Masker(threshold=0.5, padding=1)
         #####################################################
         if cfg.MODEL.FREEZE_BOX_MASK:
             for name, param in self.named_parameters():
@@ -73,19 +74,21 @@ class ROIMaskHead(torch.nn.Module):
             x = x[torch.cat(positive_inds, dim=0)]
         else:
             x = self.feature_extractor(features, proposals)
+            # print('#########', x.shape)
 
 
         mask_logits = self.predictor(x)
+        # print('%%%%%%%%%%%%%', mask_logits.shape)
 
         if not self.training:
             result = self.post_processor(mask_logits, proposals)
-
-            return x, result, {}
-        # print('mask_logits@######################',mask_logits)
+            return x, result, {}, None
 
         loss_mask = self.loss_evaluator(proposals, mask_logits, targets)
-
-        return x, all_proposals, dict(loss_mask=loss_mask)
+        prediction = self.post_processor(mask_logits, proposals)
+        # masks = prediction[0].get_field("mask")
+        # result_masks = self.masker([masks], [prediction[0]])[0]
+        return x, all_proposals, dict(loss_mask=loss_mask), prediction
 
 
 def build_roi_mask_head(cfg, in_channels):

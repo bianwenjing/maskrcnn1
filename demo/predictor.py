@@ -71,26 +71,68 @@ class COCODemo(object):
     #
     #
     # ]
-    CATEGORIES = ["_background"]
-    with open("/home/wenjing/storage/category_full.txt", "r") as txtfile:
-        valid_category = txtfile.read().splitlines()
-        valid_category = [int(x) for x in valid_category]
-    txtfile.close()
-    with open("/home/wenjing/scannetv2-labels.combined.tsv") as tsvfile:
-        tsvreader = csv.reader(tsvfile, delimiter="\t")
-        lines = []
-        for line in tsvreader:
-            lines.append(line)
 
-    for i in range(1, len(lines)):
-        raw_category = lines[i][1]
-        category = lines[i][2]
-        id = int(lines[i][0])
-
-        if id in valid_category:
-            valid_category.remove(id)
-            CATEGORIES.append(category)
-    tsvfile.close()
+    CATEGORIES =["__background",
+    "wall",
+    "floor",
+    "cabinet",
+    "bed",
+    "chair",
+    "sofa",
+    "table",
+    "door",
+    "window",
+    "bookshelf",
+    "picture",
+    "counter",
+    "blinds",
+    "desk",
+    "shelves",
+    "curtain",
+    "dresser",
+    "pillow",
+    "mirror",
+    "floor mat",
+    "clothes",
+    "ceiling",
+    "books",
+    "refridgerator",
+    "television",
+    "paper",
+    "towel",
+    "shower curtain",
+    "box",
+    "whiteboard",
+    "person",
+    "nightstand",
+    "toilet",
+    "sink",
+    "lamp",
+    "bathtub",
+    "bag",
+    "otherstructure",
+    "otherfurniture",
+    "otherprop"]
+    # CATEGORIES = ["_background"]
+    # with open("/home/wenjing/storage/category_full.txt", "r") as txtfile:
+    #     valid_category = txtfile.read().splitlines()
+    #     valid_category = [int(x) for x in valid_category]
+    # txtfile.close()
+    # with open("/home/wenjing/scannetv2-labels.combined.tsv") as tsvfile:
+    #     tsvreader = csv.reader(tsvfile, delimiter="\t")
+    #     lines = []
+    #     for line in tsvreader:
+    #         lines.append(line)
+    #
+    # for i in range(1, len(lines)):
+    #     raw_category = lines[i][1]
+    #     category = lines[i][2]
+    #     id = int(lines[i][0])
+    #
+    #     if id in valid_category:
+    #         valid_category.remove(id)
+    #         CATEGORIES.append(category)
+    # tsvfile.close()
 
     def __init__(
         self,
@@ -122,6 +164,7 @@ class COCODemo(object):
         mask_threshold = -1 if show_mask_heatmaps else 0.5
         self.masker = Masker(threshold=mask_threshold, padding=1)
         self.masker2 = Masker2(padding=1)
+
 
         # used to make colors for each class
         self.palette = torch.tensor([2 ** 25 - 1, 2 ** 15 - 1, 2 ** 21 - 1])
@@ -230,6 +273,7 @@ class COCODemo(object):
         predictions = [o.to(self.cpu_device) for o in predictions]
 
         # always single image is passed at a time
+
         prediction = predictions[0]
 
         # reshape prediction (a BoxList) into the original image size
